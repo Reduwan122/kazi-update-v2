@@ -793,6 +793,13 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun triggerSheetsBackup(onComplete: ((Boolean, String) -> Unit)? = null) {
+        val user = currentUser.value
+        if (user?.isAdmin() != true) {
+            SnackbarController.showError("ক্লাউড ব্যাকআপ পরিচালনা শুধুমাত্র এডমিন করতে পারেন")
+            onComplete?.invoke(false, "অননুমোদিত অ্যাক্সেস")
+            return
+        }
+
         viewModelScope.launch {
             if (_sheetsBackupStatus.value is SheetsBackupStatus.InProgress) {
                 return@launch
@@ -800,7 +807,6 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
 
             _sheetsBackupStatus.value = SheetsBackupStatus.InProgress
 
-            val user = currentUser.value
             val result = sheetsBackupManager.executeBackup(
                 farmProfile = farmProfile.value,
                 dailyReports = dailyReports.value,
@@ -839,6 +845,10 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
         autoBackupEnabled: Boolean,
         frequency: String
     ) {
+        if (currentUser.value?.isAdmin() != true) {
+            SnackbarController.showError("ব্যাকআপ সেটিংস পরিবর্তন শুধুমাত্র এডমিন করতে পারেন")
+            return
+        }
         sheetsBackupManager.setWebAppUrl(webAppUrl)
         sheetsBackupManager.setApiToken(apiToken)
         sheetsBackupManager.setAutoBackupEnabled(autoBackupEnabled)
@@ -977,6 +987,12 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
         onSuccess: () -> Unit = {},
         onError: (String) -> Unit = {}
     ) {
+        if (currentUser.value?.isAdmin() != true) {
+            SnackbarController.showError("পেমেন্ট যোগ করার অনুমতি শুধুমাত্র এডমিনের রয়েছে")
+            onError("অননুমোদিত অ্যাক্সেস")
+            return
+        }
+
         viewModelScope.launch {
             repository.addShareholderPayment(
                 payment = payment,
@@ -997,6 +1013,12 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
         onSuccess: () -> Unit = {},
         onError: (String) -> Unit = {}
     ) {
+        if (currentUser.value?.isAdmin() != true) {
+            SnackbarController.showError("পেমেন্ট পরিবর্তনের অনুমতি শুধুমাত্র এডমিনের রয়েছে")
+            onError("অননুমোদিত অ্যাক্সেস")
+            return
+        }
+
         viewModelScope.launch {
             repository.updateShareholderPayment(
                 payment = payment,
@@ -1017,6 +1039,12 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
         onSuccess: () -> Unit = {},
         onError: (String) -> Unit = {}
     ) {
+        if (currentUser.value?.isAdmin() != true) {
+            SnackbarController.showError("পেমেন্ট মুছে ফেলার অনুমতি শুধুমাত্র এডমিনের রয়েছে")
+            onError("অননুমোদিত অ্যাক্সেস")
+            return
+        }
+
         viewModelScope.launch {
             repository.deleteShareholderPayment(
                 id = id,

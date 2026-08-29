@@ -58,6 +58,7 @@ fun DashboardScreen(
     onNavigateToAddReport: () -> Unit,
     onNavigateToAddExpense: () -> Unit,
     onNavigateToAddShareholderPayment: () -> Unit = {},
+    onNavigateToShareholderPayments: () -> Unit = {},
     onNavigateToReports: () -> Unit,
     onNavigateToDailyReport: () -> Unit,
     onNavigateToExpense: () -> Unit,
@@ -71,6 +72,8 @@ fun DashboardScreen(
     val farmProfile by viewModel.farmProfile.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
     val rolePermissionsMap by viewModel.rolePermissions.collectAsState()
+
+    val isAdmin = currentUser?.isAdmin() == true
 
     val todayDate = remember { BanglaNumberFormatter.getCurrentDateFormatted() }
     val hasTodayReport = remember(dailyReports, todayDate) { dailyReports.any { it.date == todayDate } }
@@ -277,10 +280,10 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     QuickActionButton(
-                        title = "পেমেন্ট যোগ করুন",
+                        title = if (isAdmin) "পেমেন্ট যোগ করুন" else "শেয়ারহোল্ডার পেমেন্ট",
                         icon = Icons.Default.Payments,
                         iconTint = MaterialTheme.colorScheme.primary,
-                        onClick = onNavigateToAddShareholderPayment,
+                        onClick = if (isAdmin) onNavigateToAddShareholderPayment else onNavigateToShareholderPayments,
                         modifier = Modifier.weight(1f),
                         testTag = "quick_action_new_shareholder_payment"
                     )

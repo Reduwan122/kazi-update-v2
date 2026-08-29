@@ -1129,8 +1129,8 @@ fun generateHtmlContent(
             }
         }
 
-        val tableClass = if (rowCount <= 12) "table-spacious" else "table-standard"
-        val sigClass = if (rowCount <= 12) "sig-spacious" else "sig-standard"
+        val tableClass = if (rowCount <= 12) "table-spacious" else if (rowCount <= 22) "table-standard" else "table-compact"
+        val sigClass = if (rowCount <= 12) "sig-spacious" else if (rowCount <= 22) "sig-standard" else "sig-compact"
 
         pagesHtml.append("""
             <div class="page-container">
@@ -1158,7 +1158,7 @@ fun generateHtmlContent(
                         </tbody>
                     </table>
                 </div>
-                <div class="footer-signatures">
+                <div class="footer-signatures $sigClass">
                     <div class="sig-line">প্রস্তুতকারক</div>
                     <div class="sig-line">অনুমোদনকারী</div>
                 </div>
@@ -1175,7 +1175,7 @@ fun generateHtmlContent(
             <style>
                 @page {
                     size: A4 portrait;
-                    margin: 12mm 12mm 14mm 12mm;
+                    margin: 8mm 10mm 8mm 10mm;
                 }
 
                 *, *:before, *:after {
@@ -1188,21 +1188,16 @@ fun generateHtmlContent(
                     padding: 0;
                     color: #111111;
                     background-color: #ffffff;
-                    font-size: 12px;
+                    font-size: 11px;
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
                 }
 
                 .page-container {
                     width: 100%;
-                    min-height: 268mm;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
                     page-break-after: always;
                     break-after: page;
                     box-sizing: border-box;
-                    padding-bottom: 2mm;
                 }
 
                 .page-container:last-child {
@@ -1211,7 +1206,6 @@ fun generateHtmlContent(
                 }
 
                 .page-body {
-                    flex: 1 0 auto;
                     width: 100%;
                 }
 
@@ -1220,26 +1214,26 @@ fun generateHtmlContent(
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    border-bottom: 2.5px solid #0D631B;
-                    padding-top: 2px;
-                    padding-bottom: 8px;
-                    margin-bottom: 12px;
+                    border-bottom: 2px solid #0D631B;
+                    padding-top: 0;
+                    padding-bottom: 4px;
+                    margin-bottom: 6px;
                 }
 
                 .header-logo {
-                    flex: 0 0 85px;
+                    flex: 0 0 70px;
                     text-align: left;
                 }
 
                 .header-logo img {
-                    max-height: 65px;
-                    max-width: 85px;
+                    max-height: 46px;
+                    max-width: 70px;
                     object-fit: contain;
-                    border-radius: 6px;
+                    border-radius: 4px;
                 }
 
                 .header-logo .emoji-logo {
-                    font-size: 38px;
+                    font-size: 32px;
                     line-height: 1;
                 }
 
@@ -1249,24 +1243,23 @@ fun generateHtmlContent(
                 }
 
                 .header-text .title {
-                    font-size: 20px;
+                    font-size: 18px;
                     font-weight: bold;
                     color: #0D631B;
                     margin: 0;
-                    line-height: 1.2;
-                    letter-spacing: 0.4px;
+                    line-height: 1.15;
                 }
 
                 .header-text .subtitle {
-                    font-size: 11.5px;
+                    font-size: 10px;
                     color: #222222;
-                    margin: 2px 0;
+                    margin: 1px 0;
                     font-weight: 500;
-                    line-height: 1.3;
+                    line-height: 1.2;
                 }
 
                 .header-spacer {
-                    flex: 0 0 85px;
+                    flex: 0 0 70px;
                 }
 
                 /* ─── রিপোর্ট মেটাডাটা ও তারিখ ─── */
@@ -1274,32 +1267,32 @@ fun generateHtmlContent(
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    margin-bottom: 10px;
-                    font-size: 12.5px;
+                    margin-bottom: 6px;
+                    font-size: 11px;
                     font-weight: 600;
                 }
 
                 .meta strong {
-                    font-size: 13px;
+                    font-size: 11.5px;
                     color: #111111;
                 }
 
                 .meta span {
                     color: #444444;
-                    font-size: 12px;
+                    font-size: 10.5px;
                 }
 
-                /* ─── ডেটা টেবিল (আধুনিক ডিজাইন) ─── */
+                /* ─── ডেটা টেবিল ─── */
                 table {
                     width: 100%;
                     border-collapse: separate;
                     border-spacing: 0;
-                    margin-top: 6px;
-                    font-size: 11.5px;
-                    border-radius: 6px;
+                    margin-top: 4px;
+                    font-size: 10px;
+                    border-radius: 4px;
                     overflow: hidden;
                     border: 1px solid #D0D0D0;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+                    box-shadow: 0 1px 4px rgba(0,0,0,0.02);
                     page-break-inside: auto;
                 }
 
@@ -1308,17 +1301,6 @@ fun generateHtmlContent(
                     border-bottom: 1px solid #E0E0E0;
                     border-right: 1px solid #E0E0E0;
                     font-weight: 500;
-                }
-
-                table.table-standard th, table.table-standard td {
-                    padding: 4.8px 7px;
-                    line-height: 1.28;
-                }
-
-                table.table-spacious th, table.table-spacious td {
-                    padding: 7px 9px;
-                    line-height: 1.35;
-                    font-size: 12px;
                 }
 
                 th:last-child, td:last-child {
@@ -1334,9 +1316,9 @@ fun generateHtmlContent(
                     color: #FFFFFF !important;
                     font-weight: 600;
                     text-align: center;
-                    font-size: 11.5px;
-                    letter-spacing: 0.2px;
-                    padding: 6px 7px;
+                    font-size: 10.5px;
+                    letter-spacing: 0.1px;
+                    padding: 4px 5px;
                 }
 
                 td.text-center {
@@ -1354,32 +1336,57 @@ fun generateHtmlContent(
 
                 tr.total-row td {
                     color: #0B4D16;
-                    border-top: 2px solid #0D631B;
+                    border-top: 1.5px solid #0D631B;
                     font-weight: 700;
-                    font-size: 12px;
-                    padding: 5.5px 7px;
+                    font-size: 10.5px;
+                    padding: 4px 5px;
                 }
 
-                /* ─── সিগনেচার সেকশন (পৃষ্ঠার শেষ প্রান্তে ও প্রফেশনাল মার্জিন) ─── */
+                /* Row sizing variations */
+                table.table-compact th, table.table-compact td {
+                    padding: 2.6px 4.5px;
+                    line-height: 1.15;
+                    font-size: 9.8px;
+                }
+
+                table.table-standard th, table.table-standard td {
+                    padding: 3.6px 5.5px;
+                    line-height: 1.2;
+                    font-size: 10.5px;
+                }
+
+                table.table-spacious th, table.table-spacious td {
+                    padding: 5.5px 7.5px;
+                    line-height: 1.28;
+                    font-size: 11.5px;
+                }
+
+                /* ─── সিগনেচার সেকশন ─── */
                 .footer-signatures {
                     display: flex;
                     justify-content: space-between;
-                    padding: 0 30px;
-                    margin-top: 55px;
-                    margin-bottom: 6mm;
+                    padding: 0 25px;
                     page-break-inside: avoid;
+                    break-inside: avoid;
                 }
 
-                .sig-line {
-                    border-top: 1.5px solid #333333;
+                .sig-spacious {
+                    margin-top: 50px;
+
+                .sig-standard {
+                    margin-top: 42px;
+                }
+                .sig-compact {
+                    margin-top: 36px;
+                }
+
+                    border-top: 1.2px solid #333333;
                     width: 130px;
                     text-align: center;
-                    padding-top: 6px;
-                    font-size: 12px;
-                    font-weight: 600;
+                    padding-top: 5px;
+                    font-size: 10.5px;
                     color: #222222;
                 }
-            </style>
         </head>
         <body>
             $pagesHtml

@@ -430,6 +430,7 @@ fun MainContainerScreen(
                     onNavigateToAddReport = onNavigateToAddDailyReport,
                     onNavigateToAddExpense = onNavigateToAddExpense,
                     onNavigateToAddShareholderPayment = onNavigateToAddShareholderPayment,
+                    onNavigateToShareholderPayments = onNavigateToShareholderPayments,
                     onNavigateToReports = { currentTab = BottomNavTab.REPORTS },
                     onNavigateToDailyReport = { currentTab = BottomNavTab.DAILY_REPORT },
                     onNavigateToExpense = { currentTab = BottomNavTab.EXPENSE },

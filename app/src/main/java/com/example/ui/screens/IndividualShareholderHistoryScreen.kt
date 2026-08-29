@@ -433,7 +433,7 @@ fun IndividualShareholderHistoryScreen(
                             ) {
                                 Text("ফিল্টার পরিষ্কার করুন")
                             }
-                        } else {
+                        } else if (isAdmin) {
                             Button(
                                 onClick = onNavigateToAddPayment,
                                 shape = RoundedCornerShape(8.dp)

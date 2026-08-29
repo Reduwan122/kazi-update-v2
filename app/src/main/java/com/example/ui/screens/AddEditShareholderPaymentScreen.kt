@@ -83,6 +83,8 @@ fun AddEditShareholderPaymentScreen(
     val haptics = rememberHaptics()
     val shareholders by viewModel.shareholders.collectAsState()
     val allPayments by viewModel.shareholderPayments.collectAsState()
+    val currentUser by viewModel.currentUser.collectAsState()
+    val isAdmin = currentUser?.isAdmin() == true
 
     val isEditing = !paymentId.isNullOrBlank()
     val existingPayment = remember(paymentId, allPayments) {
@@ -152,34 +154,82 @@ fun AddEditShareholderPaymentScreen(
             )
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(innerPadding)
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-                .testTag("add_edit_shareholder_payment_screen"),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Form Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        if (!isAdmin) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(innerPadding)
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                 ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Text(
+                            text = "শুধুমাত্র এডমিনদের জন্য",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "শেয়ারহোল্ডার পেমেন্ট এন্ট্রি বা পরিবর্তন করার অনুমতি শুধুমাত্র এডমিনের রয়েছে।",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = onBack,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("ফিরে যান")
+                        }
+                    }
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(innerPadding)
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+                    .testTag("add_edit_shareholder_payment_screen"),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Form Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
                     // 1. Shareholder Selection Field
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
@@ -526,7 +576,8 @@ fun AddEditShareholderPaymentScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }

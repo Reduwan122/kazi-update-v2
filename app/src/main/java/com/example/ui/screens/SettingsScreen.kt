@@ -620,31 +620,21 @@ fun SettingsScreen(
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
-                    // Google Sheets Cloud Backup
-                    val lastSheetsBackupTime by viewModel.lastSheetsBackupTime.collectAsState()
-                    val webAppUrl by viewModel.sheetsWebAppUrl.collectAsState()
-
-                    SettingsRowItem(
-                        icon = Icons.Default.CloudUpload,
-                        title = "ক্লাউড ব্যাকআপ (Google Sheets)",
-                        subtitle = if (webAppUrl.isNotBlank()) {
-                            if (lastSheetsBackupTime > 0) "সর্বশেষ: " + viewModel.sheetsBackupManager.formatTimestampBangla(lastSheetsBackupTime)
-                            else "অনলাইন ব্যাকআপ সক্রিয় • কোনো ব্যাকআপ নেই"
-                        } else {
-                            "গুগল শিট ক্লাউড ব্যাকআপ কনফিগার করুন"
-                        },
-                        onClick = onNavigateToBackupRestore
-                    )
-
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                    // Shareholder Settings (Admin only)
+                    // Google Sheets Cloud Backup (Admin only)
                     if (isAdmin) {
+                        val lastSheetsBackupTime by viewModel.lastSheetsBackupTime.collectAsState()
+                        val webAppUrl by viewModel.sheetsWebAppUrl.collectAsState()
+
                         SettingsRowItem(
-                            icon = Icons.Default.Groups,
-                            title = "শেয়ারহোল্ডার সেটিংস",
-                            subtitle = "শেয়ারহোল্ডার তালিকা ও ব্যবস্থাপনা",
-                            onClick = onNavigateToShareholderSettings
+                            icon = Icons.Default.CloudUpload,
+                            title = "ক্লাউড ব্যাকআপ (Google Sheets)",
+                            subtitle = if (webAppUrl.isNotBlank()) {
+                                if (lastSheetsBackupTime > 0) "সর্বশেষ: " + viewModel.sheetsBackupManager.formatTimestampBangla(lastSheetsBackupTime)
+                                else "অনলাইন ব্যাকআপ সক্রিয় • কোনো ব্যাকআপ নেই"
+                            } else {
+                                "গুগল শিট ক্লাউড ব্যাকআপ কনফিগার করুন"
+                            },
+                            onClick = onNavigateToBackupRestore
                         )
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))

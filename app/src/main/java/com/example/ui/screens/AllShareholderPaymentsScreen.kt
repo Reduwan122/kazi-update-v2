@@ -247,7 +247,6 @@ fun AllShareholderPaymentsScreen(
                         haptics.tap()
                         onOpenPdfPreview(filteredPayments, "সকল শেয়ারহোল্ডার পেমেন্ট রিপোর্ট")
                     },
-                    containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.testTag("fab_shareholder_pdf")
@@ -530,7 +529,7 @@ fun AllShareholderPaymentsScreen(
                             ) {
                                 Text("ফিল্টার পরিষ্কার করুন")
                             }
-                        } else {
+                        } else if (isAdmin) {
                             Button(
                                 onClick = onNavigateToAddPayment,
                                 shape = RoundedCornerShape(8.dp)

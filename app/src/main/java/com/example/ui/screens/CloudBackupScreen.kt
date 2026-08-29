@@ -120,16 +120,64 @@ fun CloudBackupScreen(
             )
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-                .testTag("cloud_backup_screen"),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        if (!isAdmin) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(innerPadding)
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Security,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Text(
+                            text = "শুধুমাত্র এডমিনদের জন্য",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "ক্লাউড ব্যাকআপ সেটিংস ও নিয়ন্ত্রণ শুধুমাত্র এডমিন অ্যাক্সেস করতে পারবেন।",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = onBack,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("ফিরে যান")
+                        }
+                    }
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+                    .testTag("cloud_backup_screen"),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
 
             // ══════════════════════════════════════════════════════════════
             // Card 1: Cloud Sync Status & Instant Backup Button
@@ -506,11 +554,12 @@ fun CloudBackupScreen(
             Spacer(modifier = Modifier.height(20.dp))
         }
     }
+}
 
     // ══════════════════════════════════════════════════════════════
-    // Dialog: Edit Web App URL & API Token
+    // Dialog: Edit Web App URL & API Token (Admin Only)
     // ══════════════════════════════════════════════════════════════
-    if (showConfigDialog) {
+    if (isAdmin && showConfigDialog) {
         var inputUrl by remember { mutableStateOf(webAppUrl) }
         var inputToken by remember { mutableStateOf(apiToken) }
         var isTokenVisible by remember { mutableStateOf(false) }
@@ -597,9 +646,9 @@ fun CloudBackupScreen(
     }
 
     // ══════════════════════════════════════════════════════════════
-    // Dialog: Setup Instructions Guide
+    // Dialog: Setup Instructions Guide (Admin Only)
     // ══════════════════════════════════════════════════════════════
-    if (showInstructionsDialog) {
+    if (isAdmin && showInstructionsDialog) {
         AlertDialog(
             onDismissRequest = { showInstructionsDialog = false },
             title = {
