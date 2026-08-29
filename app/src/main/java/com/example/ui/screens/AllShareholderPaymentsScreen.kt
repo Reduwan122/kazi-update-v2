@@ -214,6 +214,20 @@ fun AllShareholderPaymentsScreen(
                 isRootScreen = false,
                 onBackClick = onBack,
                 actions = {
+                    if (isAdmin) {
+                        IconButton(
+                            onClick = {
+                                haptics.tap()
+                                onNavigateToAddPayment()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "পেমেন্ট যোগ করুন",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                     IconButton(
                         onClick = {
                             haptics.tap()
@@ -245,7 +259,12 @@ fun AllShareholderPaymentsScreen(
                 FloatingActionButton(
                     onClick = {
                         haptics.tap()
-                        onOpenPdfPreview(filteredPayments, "সকল শেয়ারহোল্ডার পেমেন্ট রিপোর্ট")
+                        val reportTitle = if (selectedMonth != "সকল রেকর্ড") {
+                            "${BanglaNumberFormatter.formatYearMonth(selectedMonth)}-এর শেয়ারহোল্ডার পেমেন্ট রিপোর্ট"
+                        } else {
+                            "সকল শেয়ারহোল্ডার পেমেন্ট রিপোর্ট"
+                        }
+                        onOpenPdfPreview(filteredPayments, reportTitle)
                     },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -530,7 +549,7 @@ fun AllShareholderPaymentsScreen(
                             ) {
                                 Text("ফিল্টার পরিষ্কার করুন")
                             }
-                        } else {
+                        } else if (isAdmin) {
                             Button(
                                 onClick = onNavigateToAddPayment,
                                 shape = RoundedCornerShape(8.dp)

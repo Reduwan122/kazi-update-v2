@@ -111,6 +111,61 @@ fun CloudBackupScreen(
         viewModel.refreshSheetsBackupState()
     }
 
+    if (!isAdmin) {
+        Scaffold(
+            topBar = {
+                MainTopAppBar(
+                    title = "ক্লাউড ব্যাকআপ",
+                    isRootScreen = false,
+                    onBackClick = onBack
+                )
+            }
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Security,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Text(
+                            text = "অননুমোদিত প্রবেশাধিকার",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "ক্লাউড ব্যাকআপ ও রিস্টোর সেটিংস শুধুমাত্র এডমিন ব্যবহার করতে পারেন।",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = onBack, shape = RoundedCornerShape(8.dp)) {
+                            Text("ফিরে যান")
+                        }
+                    }
+                }
+            }
+        }
+        return
+    }
+
     Scaffold(
         topBar = {
             MainTopAppBar(

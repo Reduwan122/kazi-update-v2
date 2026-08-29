@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -620,23 +621,25 @@ fun SettingsScreen(
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
-                    // Google Sheets Cloud Backup
-                    val lastSheetsBackupTime by viewModel.lastSheetsBackupTime.collectAsState()
-                    val webAppUrl by viewModel.sheetsWebAppUrl.collectAsState()
+                    // Google Sheets Cloud Backup (Admin only)
+                    if (isAdmin) {
+                        val lastSheetsBackupTime by viewModel.lastSheetsBackupTime.collectAsState()
+                        val webAppUrl by viewModel.sheetsWebAppUrl.collectAsState()
 
-                    SettingsRowItem(
-                        icon = Icons.Default.CloudUpload,
-                        title = "ক্লাউড ব্যাকআপ (Google Sheets)",
-                        subtitle = if (webAppUrl.isNotBlank()) {
-                            if (lastSheetsBackupTime > 0) "সর্বশেষ: " + viewModel.sheetsBackupManager.formatTimestampBangla(lastSheetsBackupTime)
-                            else "অনলাইন ব্যাকআপ সক্রিয় • কোনো ব্যাকআপ নেই"
-                        } else {
-                            "গুগল শিট ক্লাউড ব্যাকআপ কনফিগার করুন"
-                        },
-                        onClick = onNavigateToBackupRestore
-                    )
+                        SettingsRowItem(
+                            icon = Icons.Default.CloudUpload,
+                            title = "ক্লাউড ব্যাকআপ (Google Sheets)",
+                            subtitle = if (webAppUrl.isNotBlank()) {
+                                if (lastSheetsBackupTime > 0) "সর্বশেষ: " + viewModel.sheetsBackupManager.formatTimestampBangla(lastSheetsBackupTime)
+                                else "অনলাইন ব্যাকআপ সক্রিয় • কোনো ব্যাকআপ নেই"
+                            } else {
+                                "গুগল শিট ক্লাউড ব্যাকআপ কনফিগার করুন"
+                            },
+                            onClick = onNavigateToBackupRestore
+                        )
 
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    }
 
                     // Shareholder Settings (Admin only)
                     if (isAdmin) {
@@ -649,6 +652,27 @@ fun SettingsScreen(
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                     }
+
+                    // Check for App Updates
+                    var isCheckingUpdate by remember { mutableStateOf(false) }
+                    SettingsRowItem(
+                        icon = Icons.Default.SystemUpdate,
+                        title = "অ্যাপ আপডেট চেক করুন",
+                        subtitle = if (isCheckingUpdate) "আপডেট খোঁজা হচ্ছে..." else "নতুন সংস্করণ পরীক্ষা করুন",
+                        onClick = {
+                            if (!isCheckingUpdate) {
+                                isCheckingUpdate = true
+                                viewModel.checkForUpdates(isManual = true) { hasUpdate, _ ->
+                                    isCheckingUpdate = false
+                                    if (!hasUpdate) {
+                                        SnackbarController.showMessage("আপনি সর্বশেষ সংস্করণ ব্যবহার করছেন")
+                                    }
+                                }
+                            }
+                        }
+                    )
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
                     // Security
                     SettingsRowItem(

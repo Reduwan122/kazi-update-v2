@@ -519,12 +519,12 @@ fun ReportsScreen(
 
     if (showPdfPreviewModal) {
         val title = when (selectedCategory) {
-            ReportCategory.DAILY -> "দৈনিক খামার প্রতিবেদন ($selectedMonthFilter)"
-            ReportCategory.MONTHLY -> "মাসিক সামগ্রিক প্রতিবেদন ($selectedMonthFilter)"
-            ReportCategory.SALES -> "ডিম বিক্রয় প্রতিবেদন ($selectedMonthFilter)"
-            ReportCategory.PRODUCTION -> "ডিম উৎপাদন ও ফ্লক স্বাস্থ্য প্রতিবেদন ($selectedMonthFilter)"
-            ReportCategory.EXPENSE -> "খামার ব্যয় রেজিস্টার ($selectedMonthFilter)"
-            ReportCategory.PROFIT_LOSS -> "আর্থিক লাভ-ক্ষতি বিবরণী ($selectedMonthFilter)"
+            ReportCategory.DAILY -> "দৈনিক খামার প্রতিবেদন"
+            ReportCategory.MONTHLY -> "মাসিক সামগ্রিক প্রতিবেদন"
+            ReportCategory.SALES -> "ডিম বিক্রয় প্রতিবেদন"
+            ReportCategory.PRODUCTION -> "ডিম উৎপাদন ও ফ্লক স্বাস্থ্য প্রতিবেদন"
+            ReportCategory.EXPENSE -> "খামার ব্যয় রেজিস্টার"
+            ReportCategory.PROFIT_LOSS -> "আর্থিক লাভ-ক্ষতি বিবরণী"
         }
 
         PdfPreviewModalDialog(

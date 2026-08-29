@@ -55,8 +55,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.local.FarmProfileEntity
 import com.example.data.local.ShareholderPaymentEntity
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 @Composable
@@ -69,6 +67,28 @@ fun ShareholderPdfPreviewModalDialog(
     val context = LocalContext.current
     val sortedPayments = remember(payments) { payments.sortedBy { it.date } }
     val totalAmount = remember(payments) { payments.sumOf { it.amount } }
+
+    // Resolve month tag for separate month display
+    val distinctMonths = remember(sortedPayments) {
+        sortedPayments.map { p ->
+            if (p.date.contains("-")) {
+                val parts = p.date.split("-")
+                if (parts.size >= 2) "${parts[0]}-${parts[1].padStart(2, '0')}" else p.date
+            } else if (p.date.contains("/")) {
+                val parts = p.date.split("/")
+                if (parts.size == 3) "${parts[2]}-${parts[1].padStart(2, '0')}" else p.date
+            } else p.date.take(7)
+        }.filter { it.length == 7 && it.contains("-") }.distinct()
+    }
+    val monthTagText = remember(distinctMonths) {
+        if (distinctMonths.size == 1) {
+            BanglaNumberFormatter.formatYearMonth(distinctMonths.first())
+        } else if (distinctMonths.size > 1) {
+            "একাধিক মাস (${BanglaNumberFormatter.formatNumber(distinctMonths.size)} টি)"
+        } else {
+            "সকল রেকর্ড"
+        }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -131,6 +151,7 @@ fun ShareholderPdfPreviewModalDialog(
                                         putExtra(
                                             Intent.EXTRA_TEXT,
                                             "কাজী এগ্রোটেক অফিসিয়াল রিপোর্ট: $title\n" +
+                                                    "মাস: $monthTagText\n" +
                                                     "ফার্ম: ${farmProfile.farmName}\n" +
                                                     "মালিক: ${farmProfile.ownerName}\n" +
                                                     "মোবাইল: ${farmProfile.mobileNumber}\n\n" +
@@ -181,7 +202,7 @@ fun ShareholderPdfPreviewModalDialog(
                                 .fillMaxWidth()
                                 .padding(16.dp)
                         ) {
-                            // Farm Header
+                            // Farm Header with Logo
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -246,26 +267,44 @@ fun ShareholderPdfPreviewModalDialog(
                             HorizontalDivider(color = Color(0xFF0D631B), thickness = 2.dp)
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Report Title & Date
+                            // Line 1: Report Title
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0D631B)
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            // Line 2: Dedicated Month Line & Date
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = title,
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0D631B)
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = Color(0xFFE8F5E9),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFC8E6C9))
+                                ) {
+                                    Text(
+                                        text = "মাসঃ $monthTagText",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF0D631B),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                     )
-                                )
+                                }
+
                                 Text(
                                     text = "তারিখঃ ${BanglaNumberFormatter.formatBanglaDate(BanglaNumberFormatter.getCurrentDateFormatted())}",
                                     style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF555555))
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
 
                             // Summary Banner
                             Surface(
@@ -289,7 +328,7 @@ fun ShareholderPdfPreviewModalDialog(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
 
                             // Table Preview
                             val hScroll = rememberScrollState()
@@ -304,7 +343,7 @@ fun ShareholderPdfPreviewModalDialog(
                                         Text("ক্রঃ", modifier = Modifier.weight(0.5f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                                         Text("শেয়ারহোল্ডার", modifier = Modifier.weight(1.8f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                         Text("তারিখ", modifier = Modifier.weight(1.2f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                        Text("পরিমাণ (৳)", modifier = Modifier.weight(1.4f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
+                                        Text("পরিমাণ", modifier = Modifier.weight(1.4f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
                                         Text("মাধ্যম", modifier = Modifier.weight(1.0f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                                         Text("নোট", modifier = Modifier.weight(1.5f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
@@ -314,14 +353,14 @@ fun ShareholderPdfPreviewModalDialog(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .background(if (i % 2 == 1) Color(0xFFF9FBF9) else Color.White)
-                                                .padding(horizontal = 8.dp, vertical = 6.dp)
+                                                .padding(horizontal = 8.dp, vertical = 5.dp)
                                         ) {
-                                            Text(BanglaNumberFormatter.formatNumber(i + 1), modifier = Modifier.weight(0.5f), fontSize = 11.sp, textAlign = TextAlign.Center)
-                                            Text(p.shareholderName, modifier = Modifier.weight(1.8f), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                                            Text(p.date, modifier = Modifier.weight(1.2f), fontSize = 11.sp)
-                                            Text(BanglaNumberFormatter.formatCurrency(p.amount), modifier = Modifier.weight(1.4f), fontSize = 11.sp, textAlign = TextAlign.End, fontWeight = FontWeight.SemiBold)
-                                            Text(p.paymentMethod, modifier = Modifier.weight(1.0f), fontSize = 11.sp, textAlign = TextAlign.Center)
-                                            Text(p.note.ifBlank { "—" }, modifier = Modifier.weight(1.5f), fontSize = 10.sp, color = Color(0xFF666666))
+                                            Text(BanglaNumberFormatter.formatNumber(i + 1), modifier = Modifier.weight(0.5f), fontSize = 10.5.sp, textAlign = TextAlign.Center)
+                                            Text(p.shareholderName, modifier = Modifier.weight(1.8f), fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold)
+                                            Text(p.date, modifier = Modifier.weight(1.2f), fontSize = 10.5.sp)
+                                            Text(BanglaNumberFormatter.formatCurrency(p.amount), modifier = Modifier.weight(1.4f), fontSize = 10.5.sp, textAlign = TextAlign.End, fontWeight = FontWeight.SemiBold)
+                                            Text(p.paymentMethod, modifier = Modifier.weight(1.0f), fontSize = 10.5.sp, textAlign = TextAlign.Center)
+                                            Text(p.note.ifBlank { "—" }, modifier = Modifier.weight(1.5f), fontSize = 9.5.sp, color = Color(0xFF666666))
                                         }
                                         HorizontalDivider(color = Color(0xFFEEEEEE))
                                     }
@@ -331,16 +370,16 @@ fun ShareholderPdfPreviewModalDialog(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .background(Color(0xFFE8F5E9))
-                                            .padding(horizontal = 8.dp, vertical = 8.dp)
+                                            .padding(horizontal = 8.dp, vertical = 7.dp)
                                     ) {
-                                        Text("সর্বমোট", modifier = Modifier.weight(3.5f), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0D631B))
-                                        Text(BanglaNumberFormatter.formatCurrency(totalAmount), modifier = Modifier.weight(1.4f), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0D631B), textAlign = TextAlign.End)
+                                        Text("সর্বমোট", modifier = Modifier.weight(3.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0D631B))
+                                        Text(BanglaNumberFormatter.formatCurrency(totalAmount), modifier = Modifier.weight(1.4f), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0D631B), textAlign = TextAlign.End)
                                         Spacer(modifier = Modifier.weight(2.5f))
                                     }
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(55.dp))
+                            Spacer(modifier = Modifier.height(40.dp))
 
                             // Signatures
                             Row(
@@ -348,14 +387,14 @@ fun ShareholderPdfPreviewModalDialog(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Box(modifier = Modifier.width(100.dp).height(1.dp).background(Color(0xFF333333)))
+                                    Box(modifier = Modifier.width(110.dp).height(1.dp).background(Color(0xFF333333)))
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("হিসাব রক্ষক", fontSize = 11.sp, color = Color(0xFF333333))
+                                    Text("হিসাব রক্ষক", fontSize = 11.sp, color = Color(0xFF333333), fontWeight = FontWeight.SemiBold)
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Box(modifier = Modifier.width(100.dp).height(1.dp).background(Color(0xFF333333)))
+                                    Box(modifier = Modifier.width(110.dp).height(1.dp).background(Color(0xFF333333)))
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("মালিকের স্বাক্ষর", fontSize = 11.sp, color = Color(0xFF333333))
+                                    Text("মালিকের স্বাক্ষর", fontSize = 11.sp, color = Color(0xFF333333), fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
@@ -439,6 +478,36 @@ private fun generateShareholderHtml(
     val totalAmount = payments.sumOf { it.amount }
     val currentDateBangla = BanglaNumberFormatter.formatBanglaDate(BanglaNumberFormatter.getCurrentDateFormatted())
 
+    val logoHtml = if (farmProfile.logoUri.isNotBlank()) {
+        """<img src="${farmProfile.logoUri}" style="max-height: 56px; max-width: 75px; object-fit: contain; border-radius: 4px;" alt="Logo" />"""
+    } else if (farmProfile.logoEmoji.isNotBlank() && farmProfile.logoEmoji != "🐔") {
+        """<div style="font-size: 34px; line-height: 1;">${farmProfile.logoEmoji}</div>"""
+    } else {
+        """<div style="font-size: 34px; line-height: 1;">🐔</div>"""
+    }
+
+    val distinctMonths = payments.map { p ->
+        if (p.date.contains("-")) {
+            val parts = p.date.split("-")
+            if (parts.size >= 2) "${parts[0]}-${parts[1].padStart(2, '0')}" else p.date
+        } else if (p.date.contains("/")) {
+            val parts = p.date.split("/")
+            if (parts.size == 3) "${parts[2]}-${parts[1].padStart(2, '0')}" else p.date
+        } else p.date.take(7)
+    }.filter { it.length == 7 && it.contains("-") }.distinct()
+
+    val monthTagText = if (distinctMonths.size == 1) {
+        BanglaNumberFormatter.formatYearMonth(distinctMonths.first())
+    } else if (distinctMonths.size > 1) {
+        "একাধিক মাস (${BanglaNumberFormatter.formatNumber(distinctMonths.size)} টি)"
+    } else {
+        "সকল রেকর্ড"
+    }
+
+    val rowCount = payments.size
+    val tableClass = if (rowCount <= 14) "table-spacious" else if (rowCount <= 22) "table-standard" else "table-compact"
+    val sigMargin = if (rowCount <= 14) "45px" else if (rowCount <= 22) "38px" else "32px"
+
     val rowsHtml = StringBuilder()
     payments.forEachIndexed { index, p ->
         val bgClass = if (index % 2 == 1) "even-row" else ""
@@ -449,7 +518,7 @@ private fun generateShareholderHtml(
                 <td style="text-align: center;">${p.date}</td>
                 <td style="text-align: right; font-weight: 600;">${BanglaNumberFormatter.formatCurrency(p.amount)}</td>
                 <td style="text-align: center;">${p.paymentMethod}</td>
-                <td style="text-align: left; font-size: 10px; color: #555;">${p.note.ifBlank { "—" }}</td>
+                <td style="text-align: left; font-size: 9.5px; color: #555;">${p.note.ifBlank { "—" }}</td>
             </tr>
         """.trimIndent())
     }
@@ -459,35 +528,53 @@ private fun generateShareholderHtml(
         <html>
         <head>
             <meta charset="utf-8">
-            <title>$title</title>
+            <title>$title - $monthTagText</title>
             <style>
-                @page { size: A4; margin: 12mm 15mm; }
-                body { font-family: 'SolaimanLipi', 'Noto Sans Bengali', sans-serif; color: #222; margin: 0; padding: 0; }
-                .header { text-align: center; border-bottom: 2px solid #0D631B; padding-bottom: 8px; margin-bottom: 12px; }
-                .farm-name { font-size: 22px; font-weight: bold; color: #0D631B; margin: 0; }
-                .farm-sub { font-size: 12px; color: #555; margin: 2px 0; }
-                .title-bar { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; font-weight: bold; color: #0D631B; }
-                .summary-card { background: #F4F9F5; border: 1px solid #CCE8D2; border-radius: 6px; padding: 8px 16px; margin-bottom: 12px; display: flex; justify-content: space-around; font-size: 12px; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 11px; }
-                th { background-color: #0D631B; color: #FFF; padding: 6px 8px; text-align: center; border: 1px solid #0D631B; }
-                td { padding: 6px 8px; border: 1px solid #DDD; }
+                @page { size: A4 portrait; margin: 8mm 10mm 8mm 10mm; }
+                *, *:before, *:after { box-sizing: border-box; }
+                body { font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif; color: #222; margin: 0; padding: 0; }
+                .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2.5px solid #0D631B; padding-bottom: 6px; margin-bottom: 8px; }
+                .header-logo { flex: 0 0 75px; text-align: left; }
+                .header-text { flex: 1 1 auto; text-align: center; }
+                .header-spacer { flex: 0 0 75px; }
+                .farm-name { font-size: 20px; font-weight: bold; color: #0D631B; margin: 0; line-height: 1.2; }
+                .farm-sub { font-size: 11px; color: #444; margin: 1px 0; }
+                .meta-container { margin-bottom: 8px; border-bottom: 1px solid #E0E0E0; padding-bottom: 5px; }
+                .report-title-text { font-size: 14px; font-weight: bold; color: #0D631B; margin-bottom: 3px; }
+                .report-sub-meta { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; }
+                .report-month-tag { font-weight: bold; color: #0D631B; background-color: #E8F5E9; padding: 2px 8px; border-radius: 4px; border: 1px solid #C8E6C9; }
+                .report-date-tag { color: #555; font-size: 11px; }
+                .summary-card { background: #F4F9F5; border: 1px solid #CCE8D2; border-radius: 6px; padding: 6px 14px; margin-bottom: 8px; display: flex; justify-content: space-around; font-size: 11.5px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 8px; border: 1px solid #DDD; }
+                table.table-spacious th, table.table-spacious td { padding: 6px 8px; font-size: 11px; }
+                table.table-standard th, table.table-standard td { padding: 4.5px 6px; font-size: 10px; }
+                table.table-compact th, table.table-compact td { padding: 2.8px 4px; font-size: 8.8px; line-height: 1.15; }
+                th { background-color: #0D631B; color: #FFF; text-align: center; border: 1px solid #0D631B; font-weight: bold; }
+                td { border: 1px solid #DDD; }
                 .even-row { background-color: #F9FBF9; }
                 .total-row { background-color: #E8F5E9; font-weight: bold; color: #0D631B; }
-                .signatures { display: flex; justify-content: space-between; margin-top: 55px; margin-bottom: 6mm; }
-                .sig-box { width: 140px; text-align: center; border-top: 1px solid #333; padding-top: 4px; font-size: 11px; }
+                .signatures { display: flex; justify-content: space-between; margin-top: $sigMargin; margin-bottom: 4mm; page-break-inside: avoid; }
+                .sig-box { width: 130px; text-align: center; border-top: 1.2px solid #333; padding-top: 4px; font-size: 11px; font-weight: 600; }
             </style>
         </head>
         <body>
             <div class="header">
-                <div class="farm-name">${farmProfile.farmName}</div>
-                <div class="farm-sub">লেয়ার পোল্ট্রি ফার্ম</div>
-                <div class="farm-sub">প্রোঃ ${farmProfile.ownerName} | মোবাইলঃ ${farmProfile.mobileNumber}</div>
-                <div class="farm-sub">ঠিকানাঃ ${farmProfile.address}</div>
+                <div class="header-logo">$logoHtml</div>
+                <div class="header-text">
+                    <div class="farm-name">${farmProfile.farmName}</div>
+                    <div class="farm-sub">লেয়ার পোল্ট্রি ফার্ম</div>
+                    <div class="farm-sub">প্রোঃ ${farmProfile.ownerName} | মোবাইলঃ ${farmProfile.mobileNumber}</div>
+                    <div class="farm-sub">ঠিকানাঃ ${farmProfile.address}</div>
+                </div>
+                <div class="header-spacer"></div>
             </div>
 
-            <div class="title-bar">
-                <span>$title</span>
-                <span style="color: #555;">তারিখঃ $currentDateBangla</span>
+            <div class="meta-container">
+                <div class="report-title-text">$title</div>
+                <div class="report-sub-meta">
+                    <span class="report-month-tag">মাসঃ $monthTagText</span>
+                    <span class="report-date-tag">তারিখঃ $currentDateBangla</span>
+                </div>
             </div>
 
             <div class="summary-card">
@@ -495,13 +582,13 @@ private fun generateShareholderHtml(
                 <div><strong>মোট পরিশোধিত অর্থঃ</strong> ${BanglaNumberFormatter.formatCurrency(totalAmount)}</div>
             </div>
 
-            <table>
+            <table class="$tableClass">
                 <thead>
                     <tr>
                         <th style="width: 6%;">ক্রঃ</th>
                         <th style="width: 25%;">শেয়ারহোল্ডার</th>
                         <th style="width: 15%;">তারিখ</th>
-                        <th style="width: 20%;">পরিমাণ (৳)</th>
+                        <th style="width: 20%;">পরিমাণ</th>
                         <th style="width: 14%;">মাধ্যম</th>
                         <th style="width: 20%;">নোট</th>
                     </tr>
@@ -524,4 +611,3 @@ private fun generateShareholderHtml(
         </html>
     """.trimIndent()
 }
-

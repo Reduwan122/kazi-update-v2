@@ -182,7 +182,12 @@ fun IndividualShareholderHistoryScreen(
                         Button(
                             onClick = {
                                 haptics.tap()
-                                onOpenPdfPreview(filteredPayments, "$resolvedName-এর পেমেন্ট হিস্টোরি")
+                                val reportTitle = if (selectedMonth != "সকল রেকর্ড") {
+                                    "$resolvedName-এর পেমেন্ট হিস্টোরি (${BanglaNumberFormatter.formatYearMonth(selectedMonth)})"
+                                } else {
+                                    "$resolvedName-এর পেমেন্ট হিস্টোরি"
+                                }
+                                onOpenPdfPreview(filteredPayments, reportTitle)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
