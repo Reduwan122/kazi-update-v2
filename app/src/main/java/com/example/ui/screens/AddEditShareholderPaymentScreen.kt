@@ -64,6 +64,7 @@ import com.example.data.local.ShareholderEntity
 import com.example.data.local.ShareholderPaymentEntity
 import com.example.ui.components.BanglaNumberFormatter
 import com.example.ui.components.MainTopAppBar
+import com.example.ui.components.SnackbarController
 import com.example.ui.components.rememberHaptics
 import com.example.ui.viewmodel.PoultryViewModel
 import java.text.SimpleDateFormat
@@ -97,9 +98,15 @@ fun AddEditShareholderPaymentScreen(
     }
 
     var selectedDate by remember(existingPayment) {
-        mutableStateOf(
-            existingPayment?.date?.ifBlank { null } ?: SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date())
-        )
+        val rawDate = existingPayment?.date?.ifBlank { null }
+        val normalized = if (rawDate != null && rawDate.contains("/")) {
+            try {
+                val parts = rawDate.split("/")
+                if (parts.size == 3) "${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}"
+                else rawDate
+            } catch (e: Exception) { rawDate }
+        } else rawDate
+        mutableStateOf(normalized ?: SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()))
     }
 
     var amountText by remember(existingPayment) {
@@ -128,7 +135,7 @@ fun AddEditShareholderPaymentScreen(
     val datePickerDialog = DatePickerDialog(
         context,
         { _, year, month, dayOfMonth ->
-            val formatted = String.format(Locale.US, "%02d/%02d/%04d", dayOfMonth, month + 1, year)
+            val formatted = String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth)
             selectedDate = formatted
         },
         calendar.get(Calendar.YEAR),
@@ -294,7 +301,7 @@ fun AddEditShareholderPaymentScreen(
 
                         Box(modifier = Modifier.fillMaxWidth()) {
                             OutlinedTextField(
-                                value = selectedDate,
+                                value = BanglaNumberFormatter.formatBanglaDate(selectedDate),
                                 onValueChange = {},
                                 readOnly = true,
                                 trailingIcon = {
@@ -471,11 +478,13 @@ fun AddEditShareholderPaymentScreen(
                             payment = paymentRecord,
                             onSuccess = {
                                 isSaving = false
+                                SnackbarController.showMessage("পেমেন্ট সফলভাবে পরিবর্তন করা হয়েছে!")
                                 onBack()
                             },
                             onError = { err ->
                                 isSaving = false
                                 errorMessage = err
+                                SnackbarController.showError(err)
                             }
                         )
                     } else {
@@ -483,11 +492,13 @@ fun AddEditShareholderPaymentScreen(
                             payment = paymentRecord,
                             onSuccess = {
                                 isSaving = false
+                                SnackbarController.showMessage("পেমেন্ট সফলভাবে সংরক্ষণ করা হয়েছে!")
                                 onBack()
                             },
                             onError = { err ->
                                 isSaving = false
                                 errorMessage = err
+                                SnackbarController.showError(err)
                             }
                         )
                     }

@@ -20,20 +20,27 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -56,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.local.ShareholderPaymentEntity
 import com.example.ui.components.BanglaNumberFormatter
 import com.example.ui.components.MainTopAppBar
+import com.example.ui.components.SnackbarController
 import com.example.ui.components.rememberHaptics
 import com.example.ui.viewmodel.PoultryViewModel
 
@@ -75,29 +83,82 @@ fun IndividualShareholderHistoryScreen(
     val currentUser by viewModel.currentUser.collectAsState()
     val isAdmin = currentUser?.isAdmin() == true
 
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedMonth by remember { mutableStateOf("সকল রেকর্ড") }
+    var monthMenuExpanded by remember { mutableStateOf(false) }
     var deletingPayment by remember { mutableStateOf<ShareholderPaymentEntity?>(null) }
 
+    // Safely decode parameters
+    val decodedName = remember(shareholderNameParam) {
+        try { android.net.Uri.decode(shareholderNameParam).trim() } catch (e: Exception) { shareholderNameParam.trim() }
+    }
+    val decodedId = remember(shareholderIdentifier) {
+        try { android.net.Uri.decode(shareholderIdentifier).trim() } catch (e: Exception) { shareholderIdentifier.trim() }
+    }
+
     // Resolve shareholder name
-    val resolvedName = remember(shareholderIdentifier, shareholderNameParam, shareholders, allPayments) {
-        if (shareholderNameParam.isNotBlank()) shareholderNameParam
+    val resolvedName = remember(decodedId, decodedName, shareholders, allPayments) {
+        if (decodedName.isNotBlank() && decodedName != "none" && decodedName != "name") decodedName
         else {
-            val fromList = shareholders.find { it.id == shareholderIdentifier }?.name
-            val fromPayments = allPayments.find { it.shareholderId == shareholderIdentifier || it.shareholderName == shareholderIdentifier }?.shareholderName
-            fromList ?: fromPayments ?: shareholderIdentifier
+            val fromList = shareholders.find { it.id == decodedId }?.name
+            val fromPayments = allPayments.find { it.shareholderId == decodedId || it.shareholderName.equals(decodedId, ignoreCase = true) }?.shareholderName
+            fromList ?: fromPayments ?: decodedId
         }
     }
 
-    // Filter payments strictly for this shareholder
-    val shareholderPayments = remember(allPayments, shareholderIdentifier, resolvedName) {
-        allPayments.filter {
-            it.shareholderId == shareholderIdentifier ||
-                    it.shareholderName.equals(resolvedName, ignoreCase = true) ||
-                    it.shareholderName.equals(shareholderIdentifier, ignoreCase = true)
+    // Helper functions for universal date handling
+    fun normalizeToYearMonth(dateStr: String): String {
+        return try {
+            if (dateStr.contains("-")) {
+                val parts = dateStr.split("-")
+                if (parts.size >= 2) "${parts[0]}-${parts[1].padStart(2, '0')}" else dateStr
+            } else if (dateStr.contains("/")) {
+                val parts = dateStr.split("/")
+                if (parts.size == 3) "${parts[2]}-${parts[1].padStart(2, '0')}" else dateStr
+            } else {
+                dateStr.take(7)
+            }
+        } catch (e: Exception) {
+            dateStr
         }
     }
 
-    val totalCount = shareholderPayments.size
-    val totalAmount = shareholderPayments.sumOf { it.amount }
+    // Base filter: All payments strictly for this shareholder
+    val baseShareholderPayments = remember(allPayments, decodedId, resolvedName) {
+        allPayments.filter { p ->
+            (decodedId.isNotBlank() && decodedId != "none" && decodedId != "name" && p.shareholderId == decodedId) ||
+            (resolvedName.isNotBlank() && p.shareholderName.trim().equals(resolvedName, ignoreCase = true)) ||
+            (decodedId.isNotBlank() && p.shareholderName.trim().equals(decodedId, ignoreCase = true))
+        }
+    }
+
+    // Available months list for this specific shareholder
+    val availableMonths = remember(baseShareholderPayments) {
+        val fromPayments = baseShareholderPayments.map { normalizeToYearMonth(it.date) }.filter { it.length == 7 && it.contains("-") }
+        val currentM = BanglaNumberFormatter.getCurrentDateFormatted().take(7)
+        (fromPayments + currentM).toSortedSet(compareByDescending { it }).toList()
+    }
+
+    // Search and Month Filtered payments
+    val filteredPayments = remember(baseShareholderPayments, searchQuery, selectedMonth) {
+        baseShareholderPayments.filter { payment ->
+            val ym = normalizeToYearMonth(payment.date)
+            val matchMonth = if (selectedMonth == "সকল রেকর্ড") true else ym == selectedMonth
+
+            val matchSearch = searchQuery.isBlank() ||
+                    payment.note.contains(searchQuery, ignoreCase = true) ||
+                    payment.paymentMethod.contains(searchQuery, ignoreCase = true) ||
+                    payment.amount.toString().contains(searchQuery) ||
+                    payment.date.contains(searchQuery)
+
+            matchMonth && matchSearch
+        }
+    }
+
+    val isFilterActive = selectedMonth != "সকল রেকর্ড" || searchQuery.isNotBlank()
+
+    val totalCount = filteredPayments.size
+    val totalAmount = filteredPayments.sumOf { it.amount }
 
     Scaffold(
         topBar = {
@@ -108,7 +169,7 @@ fun IndividualShareholderHistoryScreen(
             )
         },
         bottomBar = {
-            if (shareholderPayments.isNotEmpty()) {
+            if (filteredPayments.isNotEmpty()) {
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
                     shadowElevation = 8.dp
@@ -121,7 +182,7 @@ fun IndividualShareholderHistoryScreen(
                         Button(
                             onClick = {
                                 haptics.tap()
-                                onOpenPdfPreview(shareholderPayments, "$resolvedName-এর পেমেন্ট হিস্টোরি")
+                                onOpenPdfPreview(filteredPayments, "$resolvedName-এর পেমেন্ট হিস্টোরি")
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -192,7 +253,7 @@ fun IndividualShareholderHistoryScreen(
                             )
                         }
                         Text(
-                            text = "${BanglaNumberFormatter.formatNumber(totalCount)} টি",
+                            text = "${BanglaNumberFormatter.formatNumber(totalCount)} বার",
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -233,15 +294,117 @@ fun IndividualShareholderHistoryScreen(
             }
 
             // ══════════════════════════════════════════════════════════════
+            // Search & Month Selector Filter Row
+            // ══════════════════════════════════════════════════════════════
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("বিবরণ খুঁজুন...", fontSize = 13.sp) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Clear",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                )
+
+                // Month Dropdown
+                Box {
+                    OutlinedButton(
+                        onClick = { monthMenuExpanded = true },
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.height(48.dp)
+                    ) {
+                        Text(
+                            text = if (selectedMonth == "সকল রেকর্ড") "সকল রেকর্ড" else BanglaNumberFormatter.formatYearMonth(selectedMonth),
+                            fontSize = 12.sp
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = "Select Month",
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = monthMenuExpanded,
+                        onDismissRequest = { monthMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("সকল রেকর্ড") },
+                            onClick = {
+                                selectedMonth = "সকল রেকর্ড"
+                                monthMenuExpanded = false
+                            }
+                        )
+                        availableMonths.forEach { monthStr ->
+                            DropdownMenuItem(
+                                text = { Text(BanglaNumberFormatter.formatYearMonth(monthStr)) },
+                                onClick = {
+                                    selectedMonth = monthStr
+                                    monthMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ══════════════════════════════════════════════════════════════
             // Detailed Chronological Payment List / Table
             // ══════════════════════════════════════════════════════════════
-            Text(
-                text = "বিস্তারিত লেনদেন",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (selectedMonth != "সকল রেকর্ড") "${BanglaNumberFormatter.formatYearMonth(selectedMonth)}-এর লেনদেন" else "বিস্তারিত লেনদেন",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
 
-            if (shareholderPayments.isEmpty()) {
+                if (isFilterActive) {
+                    TextButton(
+                        onClick = {
+                            searchQuery = ""
+                            selectedMonth = "সকল রেকর্ড"
+                        }
+                    ) {
+                        Text("ফিল্টার পরিষ্কার করুন", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+
+            if (filteredPayments.isEmpty()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -256,18 +419,29 @@ fun IndividualShareholderHistoryScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "এই শেয়ারহোল্ডারের কোনো পেমেন্ট রেকর্ড নেই",
+                            text = if (isFilterActive) "এই ফিল্টারে কোনো পেমেন্ট রেকর্ড নেই" else "এই শেয়ারহোল্ডারের কোনো পেমেন্ট রেকর্ড নেই",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(12.dp))
-                        Button(
-                            onClick = onNavigateToAddPayment,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("পেমেন্ট যোগ করুন")
+                        if (isFilterActive) {
+                            OutlinedButton(
+                                onClick = {
+                                    searchQuery = ""
+                                    selectedMonth = "সকল রেকর্ড"
+                                }
+                            ) {
+                                Text("ফিল্টার পরিষ্কার করুন")
+                            }
+                        } else {
+                            Button(
+                                onClick = onNavigateToAddPayment,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("পেমেন্ট যোগ করুন")
+                            }
                         }
                     }
                 }
@@ -302,7 +476,7 @@ fun IndividualShareholderHistoryScreen(
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                             // Rows
-                            shareholderPayments.forEachIndexed { index, payment ->
+                            filteredPayments.forEachIndexed { index, payment ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -311,8 +485,13 @@ fun IndividualShareholderHistoryScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     // Date
+                                    val formattedDateDisplay = if (payment.date.contains("-")) {
+                                        BanglaNumberFormatter.formatShortDate(payment.date)
+                                    } else {
+                                        BanglaNumberFormatter.toBanglaDigits(payment.date)
+                                    }
                                     Text(
-                                        text = payment.date,
+                                        text = formattedDateDisplay,
                                         modifier = Modifier.weight(1.4f),
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                                         color = MaterialTheme.colorScheme.onSurface
@@ -401,7 +580,7 @@ fun IndividualShareholderHistoryScreen(
                                     }
                                 }
 
-                                if (index < shareholderPayments.size - 1) {
+                                if (index < filteredPayments.size - 1) {
                                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
                                 }
                             }
@@ -445,9 +624,11 @@ fun IndividualShareholderHistoryScreen(
                             onSuccess = {
                                 isDeleting = false
                                 deletingPayment = null
+                                SnackbarController.showMessage("পেমেন্ট সফলভাবে মুছে ফেলা হয়েছে!")
                             },
-                            onError = {
+                            onError = { err ->
                                 isDeleting = false
+                                SnackbarController.showError(err)
                             }
                         )
                     },

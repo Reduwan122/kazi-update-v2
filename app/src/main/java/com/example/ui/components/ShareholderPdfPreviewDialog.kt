@@ -340,7 +340,7 @@ fun ShareholderPdfPreviewModalDialog(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(55.dp))
 
                             // Signatures
                             Row(
@@ -473,7 +473,7 @@ private fun generateShareholderHtml(
                 td { padding: 6px 8px; border: 1px solid #DDD; }
                 .even-row { background-color: #F9FBF9; }
                 .total-row { background-color: #E8F5E9; font-weight: bold; color: #0D631B; }
-                .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+                .signatures { display: flex; justify-content: space-between; margin-top: 55px; margin-bottom: 6mm; }
                 .sig-box { width: 140px; text-align: center; border-top: 1px solid #333; padding-top: 4px; font-size: 11px; }
             </style>
         </head>

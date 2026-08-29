@@ -324,7 +324,11 @@ fun MainAppNavigation(viewModel: PoultryViewModel) {
                 onBack = { navController.popBackStack() },
                 onNavigateToAddPayment = { navController.navigate("add_shareholder_payment") },
                 onNavigateToEditPayment = { pid -> navController.navigate("edit_shareholder_payment/$pid") },
-                onNavigateToShareholderHistory = { id, name -> navController.navigate("shareholder_history/$id?name=$name") },
+                onNavigateToShareholderHistory = { id, name ->
+                    val safeId = android.net.Uri.encode(id.ifBlank { name })
+                    val safeName = android.net.Uri.encode(name)
+                    navController.navigate("shareholder_history/$safeId?name=$safeName")
+                },
                 onOpenPdfPreview = { list, title -> pdfPaymentsToPreview = Pair(list, title) }
             )
 

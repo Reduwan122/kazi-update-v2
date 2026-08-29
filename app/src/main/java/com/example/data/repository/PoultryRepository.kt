@@ -501,13 +501,30 @@ class PoultryRepository(
                     val list = mutableListOf<ShareholderEntity>()
                     if (snapshot.exists() && snapshot.hasChildren()) {
                         for (child in snapshot.children) {
-                            val s = child.getValue(ShareholderEntity::class.java)
-                            if (s != null && s.id.isNotBlank()) {
-                                list.add(s)
+                            try {
+                                val keyId = child.key ?: ""
+                                val name = child.child("name").getValue(String::class.java) ?: ""
+                                val createdAt = child.child("createdAt").getValue(Long::class.java) ?: System.currentTimeMillis()
+                                var s: ShareholderEntity? = null
+                                try {
+                                    s = child.getValue(ShareholderEntity::class.java)
+                                } catch (e: Throwable) {
+                                    Log.w(TAG, "Direct parsing failed for shareholder: ${e.message}")
+                                }
+                                if (s == null || s.id.isBlank() || s.name.isBlank()) {
+                                    s = ShareholderEntity(id = keyId, name = name, createdAt = createdAt)
+                                } else if (s.id.isBlank()) {
+                                    s = s.copy(id = keyId)
+                                }
+                                if (s.name.isNotBlank()) {
+                                    list.add(s)
+                                }
+                            } catch (e: Throwable) {
+                                Log.w(TAG, "Error parsing shareholder: ${e.message}")
                             }
                         }
                     }
-                    _allShareholders.value = list.sortedBy { it.name }
+                    _allShareholders.value = list.distinctBy { it.id }.sortedBy { it.name }
                 }
 
                 override fun onCancelled(error: DatabaseError) {
@@ -521,13 +538,45 @@ class PoultryRepository(
                     val list = mutableListOf<ShareholderPaymentEntity>()
                     if (snapshot.exists() && snapshot.hasChildren()) {
                         for (child in snapshot.children) {
-                            val p = child.getValue(ShareholderPaymentEntity::class.java)
-                            if (p != null && p.id.isNotBlank()) {
-                                list.add(p)
+                            try {
+                                val keyId = child.key ?: ""
+                                var p: ShareholderPaymentEntity? = null
+                                try {
+                                    p = child.getValue(ShareholderPaymentEntity::class.java)
+                                } catch (e: Throwable) {
+                                    Log.w(TAG, "Direct parsing failed for shareholder payment: ${e.message}")
+                                }
+                                if (p == null || p.id.isBlank()) {
+                                    val sId = child.child("shareholderId").getValue(String::class.java) ?: ""
+                                    val sName = child.child("shareholderName").getValue(String::class.java) ?: ""
+                                    val date = child.child("date").getValue(String::class.java) ?: ""
+                                    val amount = (child.child("amount").getValue(Double::class.java))
+                                        ?: (child.child("amount").getValue(Long::class.java)?.toDouble()) ?: 0.0
+                                    val method = child.child("paymentMethod").getValue(String::class.java) ?: "Cash"
+                                    val note = child.child("note").getValue(String::class.java) ?: ""
+                                    val createdAt = child.child("createdAt").getValue(Long::class.java) ?: System.currentTimeMillis()
+                                    p = ShareholderPaymentEntity(
+                                        id = keyId,
+                                        shareholderId = sId,
+                                        shareholderName = sName,
+                                        date = date,
+                                        amount = amount,
+                                        paymentMethod = method,
+                                        note = note,
+                                        createdAt = createdAt
+                                    )
+                                } else if (p.id.isBlank()) {
+                                    p = p.copy(id = keyId)
+                                }
+                                if (p.shareholderName.isNotBlank() || p.shareholderId.isNotBlank()) {
+                                    list.add(p)
+                                }
+                            } catch (e: Throwable) {
+                                Log.w(TAG, "Error parsing shareholder payment: ${e.message}")
                             }
                         }
                     }
-                    _allShareholderPayments.value = list.sortedByDescending { it.createdAt }
+                    _allShareholderPayments.value = list.distinctBy { it.id }.sortedByDescending { it.createdAt }
                 }
 
                 override fun onCancelled(error: DatabaseError) {
@@ -1108,10 +1157,10 @@ class PoultryRepository(
 
         try {
             dbRef?.child("shareholders")?.child(id)?.setValue(shareholder)?.await()
-            val updatedList = (_allShareholders.value + shareholder).sortedBy { it.name }
-            _allShareholders.value = updatedList
+            val current = _allShareholders.value.filter { it.id != id }
+            _allShareholders.value = (current + shareholder).distinctBy { it.id }.sortedBy { it.name }
             withContext(Dispatchers.Main) { onSuccess() }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "Error adding shareholder: ${e.message}", e)
             withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "শেয়ারহোল্ডার যোগ করা সম্ভব হয়নি") }
         }
@@ -1144,10 +1193,10 @@ class PoultryRepository(
                 dbRef?.updateChildren(updates)?.await()
             }
 
-            val updatedList = _allShareholders.value.map { if (it.id == id) updated else it }.sortedBy { it.name }
+            val updatedList = _allShareholders.value.map { if (it.id == id) updated else it }.distinctBy { it.id }.sortedBy { it.name }
             _allShareholders.value = updatedList
             withContext(Dispatchers.Main) { onSuccess() }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "Error updating shareholder: ${e.message}", e)
             withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "শেয়ারহোল্ডার পরিবর্তন করা সম্ভব হয়নি") }
         }
@@ -1163,7 +1212,7 @@ class PoultryRepository(
             val updatedList = _allShareholders.value.filter { it.id != id }
             _allShareholders.value = updatedList
             withContext(Dispatchers.Main) { onSuccess() }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "Error deleting shareholder: ${e.message}", e)
             withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "শেয়ারহোল্ডার মুছে ফেলা সম্ভব হয়নি") }
         }
@@ -1196,10 +1245,10 @@ class PoultryRepository(
 
         try {
             dbRef?.child("shareholder_payments")?.child(id)?.setValue(newPayment)?.await()
-            val updatedList = (listOf(newPayment) + _allShareholderPayments.value).sortedByDescending { it.createdAt }
-            _allShareholderPayments.value = updatedList
+            val currentList = _allShareholderPayments.value.filter { it.id != id }
+            _allShareholderPayments.value = (listOf(newPayment) + currentList).distinctBy { it.id }.sortedByDescending { it.createdAt }
             withContext(Dispatchers.Main) { onSuccess() }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "Error saving shareholder payment: ${e.message}", e)
             withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "পেমেন্ট সংরক্ষণ করা সম্ভব হয়নি") }
         }
@@ -1225,10 +1274,10 @@ class PoultryRepository(
 
         try {
             dbRef?.child("shareholder_payments")?.child(payment.id)?.setValue(payment)?.await()
-            val updatedList = _allShareholderPayments.value.map { if (it.id == payment.id) payment else it }.sortedByDescending { it.createdAt }
+            val updatedList = _allShareholderPayments.value.map { if (it.id == payment.id) payment else it }.distinctBy { it.id }.sortedByDescending { it.createdAt }
             _allShareholderPayments.value = updatedList
             withContext(Dispatchers.Main) { onSuccess() }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "Error updating shareholder payment: ${e.message}", e)
             withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "পেমেন্ট পরিবর্তন করা সম্ভব হয়নি") }
         }
@@ -1244,7 +1293,7 @@ class PoultryRepository(
             val updatedList = _allShareholderPayments.value.filter { it.id != id }
             _allShareholderPayments.value = updatedList
             withContext(Dispatchers.Main) { onSuccess() }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "Error deleting shareholder payment: ${e.message}", e)
             withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "পেমেন্ট মুছে ফেলা সম্ভব হয়নি") }
         }

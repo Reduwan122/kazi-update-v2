@@ -291,7 +291,7 @@ fun PdfPreviewModalDialog(
                                 else -> DailyReportPdfTable(sortedDailyReports)
                             }
 
-                            Spacer(modifier = Modifier.height(36.dp))
+                            Spacer(modifier = Modifier.height(55.dp))
 
                             // Signature Lines matching official paper registers
                             Row(
@@ -690,15 +690,15 @@ fun MonthlyExpensePdfTable(expenses: List<MonthlyExpenseEntity>) {
                 .padding(vertical = 6.dp)
         ) {
             TableCell("তারিখ", width = 75.dp, isHeader = true, align = TextAlign.Center)
-            TableCell("খাদ্য (৳)", width = 75.dp, isHeader = true)
-            TableCell("মেডিসিন (৳)", width = 75.dp, isHeader = true)
-            TableCell("বাজার (৳)", width = 65.dp, isHeader = true)
-            TableCell("বেতন (৳)", width = 75.dp, isHeader = true)
-            TableCell("মেরামত (৳)", width = 70.dp, isHeader = true)
-            TableCell("সম্পদ (৳)", width = 65.dp, isHeader = true)
-            TableCell("বিদ্যুৎ (৳)", width = 65.dp, isHeader = true)
-            TableCell("অন্যান্য (৳)", width = 65.dp, isHeader = true)
-            TableCell("মোট ব্যয় (৳)", width = 95.dp, isHeader = true)
+            TableCell("খাদ্য", width = 75.dp, isHeader = true)
+            TableCell("মেডিসিন", width = 75.dp, isHeader = true)
+            TableCell("বাজার", width = 65.dp, isHeader = true)
+            TableCell("বেতন", width = 75.dp, isHeader = true)
+            TableCell("মেরামত", width = 70.dp, isHeader = true)
+            TableCell("সম্পদ", width = 65.dp, isHeader = true)
+            TableCell("বিদ্যুৎ", width = 65.dp, isHeader = true)
+            TableCell("অন্যান্য", width = 65.dp, isHeader = true)
+            TableCell("মোট ব্যয়", width = 95.dp, isHeader = true)
         }
 
         sortedExpenses.forEachIndexed { index, e ->
@@ -1025,7 +1025,7 @@ fun generateHtmlContent(
             }
 
             "EXPENSE" -> {
-                tableHeaders = "<th>তারিখ</th><th>খাদ্য (৳)</th><th>মেডিসিন (৳)</th><th>বাজার (৳)</th><th>বেতন (৳)</th><th>মেরামত (৳)</th><th>সম্পদ (৳)</th><th>বিদ্যুৎ (৳)</th><th>অন্যান্য (৳)</th><th>মোট ব্যয় (৳)</th>"
+                tableHeaders = "<th>তারিখ</th><th>খাদ্য</th><th>মেডিসিন</th><th>বাজার</th><th>বেতন</th><th>মেরামত</th><th>সম্পদ</th><th>বিদ্যুৎ</th><th>অন্যান্য</th><th>মোট ব্যয়</th>"
                 rowCount = monthExpenses.size
                 for (e in monthExpenses) {
                     tableRows.append("<tr>")
@@ -1365,8 +1365,8 @@ fun generateHtmlContent(
                     display: flex;
                     justify-content: space-between;
                     padding: 0 30px;
-                    margin-top: 30px;
-                    margin-bottom: 4mm;
+                    margin-top: 55px;
+                    margin-bottom: 6mm;
                     page-break-inside: avoid;
                 }
 

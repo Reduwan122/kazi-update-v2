@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.local.ShareholderEntity
 import com.example.ui.components.AccessDeniedView
 import com.example.ui.components.MainTopAppBar
+import com.example.ui.components.SnackbarController
 import com.example.ui.components.rememberHaptics
 import com.example.ui.viewmodel.PoultryViewModel
 
@@ -176,7 +177,7 @@ fun ShareholderSettingsScreen(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(shareholders, key = { it.id }) { shareholder ->
+                        items(shareholders, key = { it.id.ifBlank { it.name + "_" + it.createdAt } }) { shareholder ->
                             ShareholderRowItem(
                                 shareholder = shareholder,
                                 onEdit = {
@@ -244,9 +245,11 @@ fun ShareholderSettingsScreen(
                             onSuccess = {
                                 isSaving = false
                                 showAddDialog = false
+                                SnackbarController.showMessage("শেয়ারহোল্ডার সফলভাবে যোগ করা হয়েছে!")
                             },
-                            onError = {
+                            onError = { err ->
                                 isSaving = false
+                                SnackbarController.showError(err)
                             }
                         )
                     },
@@ -312,9 +315,11 @@ fun ShareholderSettingsScreen(
                             onSuccess = {
                                 isSaving = false
                                 editingShareholder = null
+                                SnackbarController.showMessage("শেয়ারহোল্ডারের তথ্য আপডেট হয়েছে!")
                             },
-                            onError = {
+                            onError = { err ->
                                 isSaving = false
+                                SnackbarController.showError(err)
                             }
                         )
                     },
@@ -366,9 +371,11 @@ fun ShareholderSettingsScreen(
                             onSuccess = {
                                 isDeleting = false
                                 deletingShareholder = null
+                                SnackbarController.showMessage("শেয়ারহোল্ডার সফলভাবে মুছে ফেলা হয়েছে!")
                             },
-                            onError = {
+                            onError = { err ->
                                 isDeleting = false
+                                SnackbarController.showError(err)
                             }
                         )
                     },

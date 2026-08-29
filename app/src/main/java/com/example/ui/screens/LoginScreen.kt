@@ -40,7 +40,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -93,9 +92,9 @@ fun LoginScreen(
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf(viewModel.getRememberedEmail()) }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
     var confirmPassword by remember { mutableStateOf("") }
     var rememberMe by remember { mutableStateOf(viewModel.isRememberLoginEnabled()) }
-    var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -453,49 +452,45 @@ fun LoginScreen(
 
                 // Remember Me & Forgot Password Row
                 if (selectedTab == 0) {
-                    Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
                                 .clickable { rememberMe = !rememberMe }
-                                .padding(vertical = 4.dp, horizontal = 2.dp)
+                                .padding(end = 4.dp, top = 2.dp, bottom = 2.dp)
                         ) {
                             Checkbox(
                                 checked = rememberMe,
                                 onCheckedChange = { rememberMe = it },
-                                colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary),
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(24.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "লগইন মনে রাখুন",
                                 style = MaterialTheme.typography.bodySmall.copy(
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            )
-                        }
-
-                        TextButton(onClick = {
-                            forgotEmail = email
-                            showForgotPasswordDialog = true
-                        }) {
-                            Text(
-                                text = "পাসওয়ার্ড ভুলে গেছেন?",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 13.sp
                                 )
                             )
                         }
+
+                        Text(
+                            text = "পাসওয়ার্ড ভুলে গেছেন?",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp
+                            ),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable { showForgotPasswordDialog = true }
+                                .padding(4.dp)
+                        )
                     }
                 } else {
                     Spacer(modifier = Modifier.height(6.dp))
@@ -505,33 +500,28 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(6.dp))
                             .clickable { rememberMe = !rememberMe }
-                            .padding(vertical = 4.dp, horizontal = 2.dp)
+                            .padding(top = 2.dp, bottom = 2.dp)
                     ) {
                         Checkbox(
                             checked = rememberMe,
                             onCheckedChange = { rememberMe = it },
-                            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary),
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "লগইন মনে রাখুন",
                             style = MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 13.sp
                             )
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Submit Button (Login or Register)
+                Spacer(modifier = Modifier.height(18.dp))
                 Button(
                     onClick = {
                         if (email.isBlank() || password.isBlank()) {
-                            errorMessage = "ইমেইল এবং পাসওয়ার্ড প্রদান করুন।"
                             return@Button
                         }
                         if (selectedTab == 1) {
@@ -556,7 +546,6 @@ fun LoginScreen(
                                     if (user.isApprovedUser()) {
                                         SnackbarController.showMessage("অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!")
                                         onLoginSuccess()
-                                    } else {
                                         pendingUser = user
                                     }
                                 },
@@ -576,7 +565,6 @@ fun LoginScreen(
                                     if (user.isApprovedUser()) {
                                         onLoginSuccess()
                                     } else {
-                                        pendingUser = user
                                     }
                                 },
                                 onError = { err ->
