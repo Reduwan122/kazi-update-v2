@@ -46,7 +46,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -55,7 +54,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.local.FarmProfileEntity
 import com.example.data.local.ShareholderPaymentEntity
-import java.util.Locale
 
 @Composable
 fun ShareholderPdfPreviewModalDialog(
@@ -68,7 +66,6 @@ fun ShareholderPdfPreviewModalDialog(
     val sortedPayments = remember(payments) { payments.sortedBy { it.date } }
     val totalAmount = remember(payments) { payments.sumOf { it.amount } }
 
-    // Resolve month tag for separate month display
     val distinctMonths = remember(sortedPayments) {
         sortedPayments.map { p ->
             if (p.date.contains("-")) {
@@ -210,7 +207,7 @@ fun ShareholderPdfPreviewModalDialog(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(56.dp)
+                                        .size(60.dp)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(Color(0xFFF0FDF4)),
                                     contentAlignment = Alignment.Center
@@ -218,7 +215,7 @@ fun ShareholderPdfPreviewModalDialog(
                                     FarmLogoDisplay(
                                         logoUri = farmProfile.logoUri,
                                         logoEmoji = farmProfile.logoEmoji,
-                                        modifier = Modifier.size(52.dp).clip(RoundedCornerShape(6.dp)),
+                                        modifier = Modifier.size(56.dp).clip(RoundedCornerShape(6.dp)),
                                         contentScale = ContentScale.Fit
                                     )
                                 }
@@ -260,7 +257,7 @@ fun ShareholderPdfPreviewModalDialog(
                                     )
                                 }
 
-                                Spacer(modifier = Modifier.size(56.dp))
+                                Spacer(modifier = Modifier.size(60.dp))
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
@@ -379,7 +376,7 @@ fun ShareholderPdfPreviewModalDialog(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(40.dp))
+                            Spacer(modifier = Modifier.height(45.dp))
 
                             // Signatures
                             Row(
@@ -458,7 +455,6 @@ private fun printShareholderHtml(context: Context, docName: String, html: String
                 val printAttributes = PrintAttributes.Builder()
                     .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
                     .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
-                    .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
                     .build()
 
                 printManager?.print(docName, printAdapter, printAttributes)
@@ -479,11 +475,11 @@ private fun generateShareholderHtml(
     val currentDateBangla = BanglaNumberFormatter.formatBanglaDate(BanglaNumberFormatter.getCurrentDateFormatted())
 
     val logoHtml = if (farmProfile.logoUri.isNotBlank()) {
-        """<img src="${farmProfile.logoUri}" style="max-height: 56px; max-width: 75px; object-fit: contain; border-radius: 4px;" alt="Logo" />"""
+        """<img src="${farmProfile.logoUri}" style="max-height: 65px; max-width: 85px; object-fit: contain; border-radius: 6px;" alt="Logo" />"""
     } else if (farmProfile.logoEmoji.isNotBlank() && farmProfile.logoEmoji != "🐔") {
-        """<div style="font-size: 34px; line-height: 1;">${farmProfile.logoEmoji}</div>"""
+        """<div style="font-size: 38px; line-height: 1;">${farmProfile.logoEmoji}</div>"""
     } else {
-        """<div style="font-size: 34px; line-height: 1;">🐔</div>"""
+        """<div style="font-size: 38px; line-height: 1;">🐔</div>"""
     }
 
     val distinctMonths = payments.map { p ->
@@ -504,10 +500,6 @@ private fun generateShareholderHtml(
         "সকল রেকর্ড"
     }
 
-    val rowCount = payments.size
-    val tableClass = if (rowCount <= 14) "table-spacious" else if (rowCount <= 22) "table-standard" else "table-compact"
-    val sigMargin = if (rowCount <= 14) "45px" else if (rowCount <= 22) "38px" else "32px"
-
     val rowsHtml = StringBuilder()
     payments.forEachIndexed { index, p ->
         val bgClass = if (index % 2 == 1) "even-row" else ""
@@ -518,7 +510,7 @@ private fun generateShareholderHtml(
                 <td style="text-align: center;">${p.date}</td>
                 <td style="text-align: right; font-weight: 600;">${BanglaNumberFormatter.formatCurrency(p.amount)}</td>
                 <td style="text-align: center;">${p.paymentMethod}</td>
-                <td style="text-align: left; font-size: 9.5px; color: #555;">${p.note.ifBlank { "—" }}</td>
+                <td style="text-align: left; font-size: 10.5px; color: #555;">${p.note.ifBlank { "—" }}</td>
             </tr>
         """.trimIndent())
     }
@@ -530,82 +522,88 @@ private fun generateShareholderHtml(
             <meta charset="utf-8">
             <title>$title - $monthTagText</title>
             <style>
-                @page { size: A4 portrait; margin: 8mm 10mm 8mm 10mm; }
+                @page { size: A4 portrait; margin: 12mm 12mm 14mm 12mm; }
                 *, *:before, *:after { box-sizing: border-box; }
-                body { font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif; color: #222; margin: 0; padding: 0; }
-                .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2.5px solid #0D631B; padding-bottom: 6px; margin-bottom: 8px; }
-                .header-logo { flex: 0 0 75px; text-align: left; }
+                body { font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif; color: #222; margin: 0; padding: 0; font-size: 12px; }
+                .page-container { width: 100%; min-height: 268mm; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; break-after: page; box-sizing: border-box; padding-bottom: 2mm; }
+                .page-container:last-child { page-break-after: avoid; break-after: auto; }
+                .page-body { flex: 1 0 auto; width: 100%; }
+                .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2.5px solid #0D631B; padding-top: 2px; padding-bottom: 8px; margin-bottom: 12px; }
+                .header-logo { flex: 0 0 85px; text-align: left; }
                 .header-text { flex: 1 1 auto; text-align: center; }
-                .header-spacer { flex: 0 0 75px; }
-                .farm-name { font-size: 20px; font-weight: bold; color: #0D631B; margin: 0; line-height: 1.2; }
-                .farm-sub { font-size: 11px; color: #444; margin: 1px 0; }
-                .meta-container { margin-bottom: 8px; border-bottom: 1px solid #E0E0E0; padding-bottom: 5px; }
-                .report-title-text { font-size: 14px; font-weight: bold; color: #0D631B; margin-bottom: 3px; }
-                .report-sub-meta { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; }
-                .report-month-tag { font-weight: bold; color: #0D631B; background-color: #E8F5E9; padding: 2px 8px; border-radius: 4px; border: 1px solid #C8E6C9; }
-                .report-date-tag { color: #555; font-size: 11px; }
-                .summary-card { background: #F4F9F5; border: 1px solid #CCE8D2; border-radius: 6px; padding: 6px 14px; margin-bottom: 8px; display: flex; justify-content: space-around; font-size: 11.5px; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 8px; border: 1px solid #DDD; }
-                table.table-spacious th, table.table-spacious td { padding: 6px 8px; font-size: 11px; }
-                table.table-standard th, table.table-standard td { padding: 4.5px 6px; font-size: 10px; }
-                table.table-compact th, table.table-compact td { padding: 2.8px 4px; font-size: 8.8px; line-height: 1.15; }
-                th { background-color: #0D631B; color: #FFF; text-align: center; border: 1px solid #0D631B; font-weight: bold; }
-                td { border: 1px solid #DDD; }
-                .even-row { background-color: #F9FBF9; }
+                .header-spacer { flex: 0 0 85px; }
+                .farm-name { font-size: 20px; font-weight: bold; color: #0D631B; margin: 0; line-height: 1.2; letter-spacing: 0.4px; }
+                .farm-sub { font-size: 11.5px; color: #222; margin: 2px 0; font-weight: 500; line-height: 1.3; }
+                .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12.5px; font-weight: 600; }
+                .meta strong { font-size: 13px; color: #111; }
+                .report-month-tag { font-weight: bold; color: #0D631B; background-color: #E8F5E9; padding: 2px 8px; border-radius: 4px; border: 1px solid #C8E6C9; font-size: 11.5px; display: inline-block; }
+                .meta span { color: #444; font-size: 12px; }
+                .summary-card { background: #F4F9F5; border: 1px solid #CCE8D2; border-radius: 6px; padding: 8px 16px; margin-bottom: 10px; display: flex; justify-content: space-around; font-size: 12px; }
+                table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 6px; font-size: 11.5px; border-radius: 6px; overflow: hidden; border: 1px solid #D0D0D0; box-shadow: 0 2px 6px rgba(0,0,0,0.03); margin-bottom: 10px; }
+                th, td { border-bottom: 1px solid #E0E0E0; border-right: 1px solid #E0E0E0; padding: 6px 8px; line-height: 1.3; }
+                th:last-child, td:last-child { border-right: none; }
+                tbody tr:last-child td { border-bottom: none; }
+                th { background-color: #0D631B; color: #FFF; text-align: center; font-weight: 600; font-size: 11.5px; }
+                .even-row { background-color: #F4F9F5; }
                 .total-row { background-color: #E8F5E9; font-weight: bold; color: #0D631B; }
-                .signatures { display: flex; justify-content: space-between; margin-top: $sigMargin; margin-bottom: 4mm; page-break-inside: avoid; }
-                .sig-box { width: 130px; text-align: center; border-top: 1.2px solid #333; padding-top: 4px; font-size: 11px; font-weight: 600; }
+                .total-row td { color: #0B4D16; border-top: 2px solid #0D631B; font-weight: 700; font-size: 12px; padding: 6px 8px; }
+                .signatures { display: flex; justify-content: space-between; padding: 0 30px; margin-top: 55px; margin-bottom: 6mm; page-break-inside: avoid; }
+                .sig-box { width: 130px; text-align: center; border-top: 1.5px solid #333; padding-top: 6px; font-size: 12px; font-weight: 600; }
             </style>
         </head>
         <body>
-            <div class="header">
-                <div class="header-logo">$logoHtml</div>
-                <div class="header-text">
-                    <div class="farm-name">${farmProfile.farmName}</div>
-                    <div class="farm-sub">লেয়ার পোল্ট্রি ফার্ম</div>
-                    <div class="farm-sub">প্রোঃ ${farmProfile.ownerName} | মোবাইলঃ ${farmProfile.mobileNumber}</div>
-                    <div class="farm-sub">ঠিকানাঃ ${farmProfile.address}</div>
+            <div class="page-container">
+                <div class="page-body">
+                    <div class="header">
+                        <div class="header-logo">$logoHtml</div>
+                        <div class="header-text">
+                            <div class="farm-name">${farmProfile.farmName}</div>
+                            <div class="farm-sub">লেয়ার পোল্ট্রি ফার্ম</div>
+                            <div class="farm-sub">প্রোঃ ${farmProfile.ownerName} | মোবাইলঃ ${farmProfile.mobileNumber}</div>
+                            <div class="farm-sub">ঠিকানাঃ ${farmProfile.address}</div>
+                        </div>
+                        <div class="header-spacer"></div>
+                    </div>
+
+                    <div class="meta">
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                            <strong>$title</strong>
+                            <span class="report-month-tag">মাসঃ $monthTagText</span>
+                        </div>
+                        <span>তারিখ: $currentDateBangla</span>
+                    </div>
+
+                    <div class="summary-card">
+                        <div><strong>মোট লেনদেনঃ</strong> ${BanglaNumberFormatter.formatNumber(payments.size)} বার</div>
+                        <div><strong>মোট পরিশোধিত অর্থঃ</strong> ${BanglaNumberFormatter.formatCurrency(totalAmount)}</div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 6%;">ক্রঃ</th>
+                                <th style="width: 25%;">শেয়ারহোল্ডার</th>
+                                <th style="width: 15%;">তারিখ</th>
+                                <th style="width: 20%;">পরিমাণ</th>
+                                <th style="width: 14%;">মাধ্যম</th>
+                                <th style="width: 20%;">নোট</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            $rowsHtml
+                            <tr class="total-row">
+                                <td colspan="3" style="text-align: center;">সর্বমোট</td>
+                                <td style="text-align: right;">${BanglaNumberFormatter.formatCurrency(totalAmount)}</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="header-spacer"></div>
-            </div>
 
-            <div class="meta-container">
-                <div class="report-title-text">$title</div>
-                <div class="report-sub-meta">
-                    <span class="report-month-tag">মাসঃ $monthTagText</span>
-                    <span class="report-date-tag">তারিখঃ $currentDateBangla</span>
+                <div class="signatures">
+                    <div class="sig-box">হিসাব রক্ষক</div>
+                    <div class="sig-box">মালিকের স্বাক্ষর</div>
                 </div>
-            </div>
-
-            <div class="summary-card">
-                <div><strong>মোট লেনদেনঃ</strong> ${BanglaNumberFormatter.formatNumber(payments.size)} বার</div>
-                <div><strong>মোট পরিশোধিত অর্থঃ</strong> ${BanglaNumberFormatter.formatCurrency(totalAmount)}</div>
-            </div>
-
-            <table class="$tableClass">
-                <thead>
-                    <tr>
-                        <th style="width: 6%;">ক্রঃ</th>
-                        <th style="width: 25%;">শেয়ারহোল্ডার</th>
-                        <th style="width: 15%;">তারিখ</th>
-                        <th style="width: 20%;">পরিমাণ</th>
-                        <th style="width: 14%;">মাধ্যম</th>
-                        <th style="width: 20%;">নোট</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    $rowsHtml
-                    <tr class="total-row">
-                        <td colspan="3" style="text-align: center;">সর্বমোট</td>
-                        <td style="text-align: right;">${BanglaNumberFormatter.formatCurrency(totalAmount)}</td>
-                        <td colspan="2"></td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="signatures">
-                <div class="sig-box">হিসাব রক্ষক</div>
-                <div class="sig-box">মালিকের স্বাক্ষর</div>
             </div>
         </body>
         </html>

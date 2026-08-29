@@ -214,20 +214,6 @@ fun AllShareholderPaymentsScreen(
                 isRootScreen = false,
                 onBackClick = onBack,
                 actions = {
-                    if (isAdmin) {
-                        IconButton(
-                            onClick = {
-                                haptics.tap()
-                                onNavigateToAddPayment()
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "পেমেন্ট যোগ করুন",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
                     IconButton(
                         onClick = {
                             haptics.tap()
