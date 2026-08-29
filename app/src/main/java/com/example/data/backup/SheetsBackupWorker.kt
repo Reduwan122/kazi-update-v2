@@ -50,6 +50,8 @@ class SheetsBackupWorker(
             val monthlyExpenses = repository.allExpenses.first()
             val rolePermissions = repository.rolePermissions.first()
             val allUsers = repository.allUsers.first()
+            val shareholders = repository.allShareholders.first()
+            val shareholderPayments = repository.allShareholderPayments.first()
 
             val auth = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
             val currentUser = auth?.currentUser
@@ -60,6 +62,8 @@ class SheetsBackupWorker(
                 monthlyExpenses = monthlyExpenses,
                 users = allUsers,
                 rolePermissions = rolePermissions,
+                shareholders = shareholders,
+                shareholderPayments = shareholderPayments,
                 userId = currentUser?.uid ?: "",
                 userEmail = currentUser?.email ?: ""
             )

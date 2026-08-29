@@ -4,6 +4,8 @@ import com.example.data.local.DailyReportEntity
 import com.example.data.local.FarmProfileEntity
 import com.example.data.local.MonthlyExpenseEntity
 import com.example.data.local.RolePermissionConfig
+import com.example.data.local.ShareholderEntity
+import com.example.data.local.ShareholderPaymentEntity
 import com.example.data.local.UserEntity
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -46,7 +48,11 @@ data class SheetsBackupData(
     @Json(name = "users")
     val users: List<UserEntity> = emptyList(),
     @Json(name = "role_permissions")
-    val rolePermissions: Map<String, RolePermissionConfig> = emptyMap()
+    val rolePermissions: Map<String, RolePermissionConfig> = emptyMap(),
+    @Json(name = "shareholders")
+    val shareholders: List<ShareholderEntity> = emptyList(),
+    @Json(name = "shareholder_payments")
+    val shareholderPayments: List<ShareholderPaymentEntity> = emptyList()
 )
 
 @JsonClass(generateAdapter = true)

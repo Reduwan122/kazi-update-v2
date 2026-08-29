@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -70,6 +72,8 @@ import com.example.ui.components.rememberHaptics
 import com.example.ui.components.scaleClickable
 import com.example.ui.viewmodel.PoultryViewModel
 
+import androidx.compose.material.icons.filled.Groups
+
 enum class ReportCategory(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     DAILY("দৈনিক রিপোর্ট", Icons.Default.DateRange),
     MONTHLY("মাসিক রিপোর্ট", Icons.Default.CalendarMonth),
@@ -83,7 +87,8 @@ enum class ReportCategory(val title: String, val icon: androidx.compose.ui.graph
 fun ReportsScreen(
     viewModel: PoultryViewModel,
     onOpenNotifications: () -> Unit = {},
-    onNavigateToProfile: () -> Unit = {}
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToShareholderPayments: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val haptics = rememberHaptics()
@@ -421,6 +426,67 @@ fun ReportsScreen(
                         } else {
                             Spacer(modifier = Modifier.weight(1f))
                         }
+                    }
+                }
+                // Shareholder Payments Report Entry
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable {
+                            haptics.tap()
+                            onNavigateToShareholderPayments()
+                        }
+                        .testTag("card_shareholder_payments_report"),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Groups,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Column {
+                                Text(
+                                    text = "সকল শেয়ারহোল্ডার পেমেন্ট",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "শেয়ারহোল্ডার পেমেন্ট হিস্টোরি ও রিপোর্ট",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
                 }
             }

@@ -8,6 +8,8 @@ import com.example.data.local.DailyReportEntity
 import com.example.data.local.FarmProfileEntity
 import com.example.data.local.MonthlyExpenseEntity
 import com.example.data.local.RolePermissionConfig
+import com.example.data.local.ShareholderEntity
+import com.example.data.local.ShareholderPaymentEntity
 import com.example.data.local.UserEntity
 import com.example.domain.StockCalculationService
 import com.google.firebase.auth.FirebaseAuth
@@ -34,6 +36,7 @@ class PoultryRepository(
     private val prefs: SharedPreferences = context.getSharedPreferences("kazi_agro_prefs", Context.MODE_PRIVATE)
 
     private val PREF_KEY_REMEMBER = "key_remember_login"
+    private val PREF_KEY_REMEMBERED_EMAIL = "key_remembered_email"
     private val PREF_KEY_DARK_MODE = "key_dark_mode"
     private val PREF_KEY_FARM_NAME = "key_farm_name"
     private val PREF_KEY_OWNER_NAME = "key_owner_name"
@@ -42,8 +45,11 @@ class PoultryRepository(
     private val PREF_KEY_LOGO_URI = "key_logo_uri"
     private val PREF_KEY_LOGO_EMOJI = "key_logo_emoji"
     private val PREF_KEY_AUTO_BACKUP = "key_auto_backup"
+    private val PREF_KEY_CACHED_USERNAME = "key_cached_username"
     private val PREF_KEY_CACHED_ROLE = "key_cached_role"
     private val PREF_KEY_CACHED_APPROVED = "key_cached_approved"
+    private val PREF_KEY_CACHED_PHONE = "key_cached_phone"
+    private val PREF_KEY_CACHED_AVATAR = "key_cached_avatar"
 
     // Node used to permanently lock out a deleted user, since the client app
     // cannot delete another user's Firebase Authentication account directly
@@ -123,6 +129,12 @@ class PoultryRepository(
     )
     val rolePermissions: Flow<Map<String, RolePermissionConfig>> = _rolePermissions.asStateFlow()
 
+    private val _allShareholders = MutableStateFlow<List<ShareholderEntity>>(emptyList())
+    val allShareholders: Flow<List<ShareholderEntity>> = _allShareholders.asStateFlow()
+
+    private val _allShareholderPayments = MutableStateFlow<List<ShareholderPaymentEntity>>(emptyList())
+    val allShareholderPayments: Flow<List<ShareholderPaymentEntity>> = _allShareholderPayments.asStateFlow()
+
     init {
         checkCurrentAuthSession()
         setupFirebaseRealtimeListeners()
@@ -194,24 +206,21 @@ class PoultryRepository(
 
     private fun checkCurrentAuthSession() {
         try {
+            val rememberMe = prefs.getBoolean(PREF_KEY_REMEMBER, true)
             val firebaseUser = auth?.currentUser
-            if (firebaseUser != null) {
-                // Guard against a stale cached session: if an admin deleted
-                // this account while the app was closed, deny access here
-                // instead of falling back to the last-known cached role,
-                // which would otherwise resurrect their access silently.
+            if (firebaseUser != null && rememberMe) {
+                // Immediately resume session synchronously from local cache
+                resumeCachedSession(firebaseUser)
+
+                // Background check if account was blocked/deleted by admin
                 dbRef?.child(BLOCKED_USERS_NODE)?.child(firebaseUser.uid)?.get()
                     ?.addOnSuccessListener { blockedSnap ->
                         if (blockedSnap.exists()) {
                             forceSignOutBlockedUser()
-                        } else {
-                            resumeCachedSession(firebaseUser)
                         }
                     }
-                    ?.addOnFailureListener {
-                        // If we can't reach the DB, fall back to resuming as before
-                        resumeCachedSession(firebaseUser)
-                    } ?: resumeCachedSession(firebaseUser)
+            } else if (firebaseUser != null && !rememberMe) {
+                signOut()
             } else {
                 _currentUser.value = null
             }
@@ -225,14 +234,16 @@ class PoultryRepository(
         try {
             val email = firebaseUser.email ?: ""
             val isAdminEmail = isRootAdminEmail(email)
+            val cachedUsername = prefs.getString(PREF_KEY_CACHED_USERNAME, null)
             val defaultRole = if (isAdminEmail) "ADMIN" else (prefs.getString(PREF_KEY_CACHED_ROLE, "WORKER") ?: "WORKER")
             val defaultApproved = if (isAdminEmail) true else prefs.getBoolean(PREF_KEY_CACHED_APPROVED, false)
 
             val userEntity = UserEntity(
                 id = firebaseUser.uid,
-                username = firebaseUser.displayName ?: firebaseUser.email?.substringBefore("@") ?: "User",
+                username = cachedUsername ?: firebaseUser.displayName ?: firebaseUser.email?.substringBefore("@") ?: "User",
                 email = email,
-                phone = "",
+                phone = prefs.getString(PREF_KEY_CACHED_PHONE, "") ?: "",
+                profileImageUri = prefs.getString(PREF_KEY_CACHED_AVATAR, "") ?: "",
                 role = defaultRole,
                 isApproved = defaultApproved,
                 registeredDate = System.currentTimeMillis(),
@@ -259,12 +270,14 @@ class PoultryRepository(
                 val username = snapshot.child("username").getValue(String::class.java) ?: fallback.username
                 val email = snapshot.child("email").getValue(String::class.java) ?: fallback.email
                 val phone = snapshot.child("phone").getValue(String::class.java) ?: fallback.phone
+                val profileImageUri = snapshot.child("profileImageUri").getValue(String::class.java) ?: fallback.profileImageUri
 
                 val resolvedUser = UserEntity(
                     id = uid,
                     username = username,
                     email = email,
                     phone = phone,
+                    profileImageUri = profileImageUri,
                     role = role,
                     isApproved = isApproved,
                     registeredDate = snapshot.child("registeredDate").getValue(Long::class.java) ?: fallback.registeredDate,
@@ -274,8 +287,11 @@ class PoultryRepository(
                 )
                 _currentUser.value = resolvedUser
                 prefs.edit()
+                    .putString(PREF_KEY_CACHED_USERNAME, username)
                     .putString(PREF_KEY_CACHED_ROLE, role)
                     .putBoolean(PREF_KEY_CACHED_APPROVED, isApproved)
+                    .putString(PREF_KEY_CACHED_PHONE, phone)
+                    .putString(PREF_KEY_CACHED_AVATAR, profileImageUri)
                     .apply()
             } else {
                 // No profile record found. Before treating this as a fresh
@@ -478,6 +494,46 @@ class PoultryRepository(
                     Log.e(TAG, "role_permissions listener cancelled: ${error.message}")
                 }
             })
+
+            // Listen to Shareholders in Firebase
+            reference.child("shareholders").addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val list = mutableListOf<ShareholderEntity>()
+                    if (snapshot.exists() && snapshot.hasChildren()) {
+                        for (child in snapshot.children) {
+                            val s = child.getValue(ShareholderEntity::class.java)
+                            if (s != null && s.id.isNotBlank()) {
+                                list.add(s)
+                            }
+                        }
+                    }
+                    _allShareholders.value = list.sortedBy { it.name }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(TAG, "shareholders listener cancelled: ${error.message}")
+                }
+            })
+
+            // Listen to Shareholder Payments in Firebase
+            reference.child("shareholder_payments").addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val list = mutableListOf<ShareholderPaymentEntity>()
+                    if (snapshot.exists() && snapshot.hasChildren()) {
+                        for (child in snapshot.children) {
+                            val p = child.getValue(ShareholderPaymentEntity::class.java)
+                            if (p != null && p.id.isNotBlank()) {
+                                list.add(p)
+                            }
+                        }
+                    }
+                    _allShareholderPayments.value = list.sortedByDescending { it.createdAt }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(TAG, "shareholder_payments listener cancelled: ${error.message}")
+                }
+            })
         } catch (e: Exception) {
             Log.e(TAG, "Error configuring Firebase Realtime Database listeners: ${e.message}", e)
         }
@@ -487,7 +543,7 @@ class PoultryRepository(
     // REAL FIREBASE AUTHENTICATION METHODS
     // -------------------------------------------------------------
 
-    suspend fun signInWithEmail(email: String, pass: String): Result<UserEntity> = withContext(Dispatchers.IO) {
+    suspend fun signInWithEmail(email: String, pass: String, rememberMe: Boolean = true): Result<UserEntity> = withContext(Dispatchers.IO) {
         val firebaseAuth = auth
             ?: return@withContext Result.failure(Exception("Firebase Auth ইনিশিয়ালাইজ করা যায়নি। অনুগ্রহ করে ইন্টারনেট ও ফায়ারবেস কনফিগারেশন চেক করুন।"))
 
@@ -527,13 +583,34 @@ class PoultryRepository(
                     isApproved = isAdminEmail,
                     registeredDate = System.currentTimeMillis(),
                     passwordHash = "",
-                    rememberLogin = true,
+                    rememberLogin = rememberMe,
                     isLoggedIn = true
                 )
                 dbRef?.child("users")?.child(user.uid)?.setValue(userEntity)?.await()
             }
 
             _currentUser.value = userEntity
+
+            if (rememberMe) {
+                prefs.edit()
+                    .putBoolean(PREF_KEY_REMEMBER, true)
+                    .putString(PREF_KEY_REMEMBERED_EMAIL, userEmail)
+                    .putString(PREF_KEY_CACHED_USERNAME, userEntity.username)
+                    .putString(PREF_KEY_CACHED_ROLE, userEntity.role)
+                    .putBoolean(PREF_KEY_CACHED_APPROVED, userEntity.isApproved)
+                    .putString(PREF_KEY_CACHED_PHONE, userEntity.phone)
+                    .putString(PREF_KEY_CACHED_AVATAR, userEntity.profileImageUri)
+                    .apply()
+            } else {
+                prefs.edit()
+                    .putBoolean(PREF_KEY_REMEMBER, false)
+                    .remove(PREF_KEY_REMEMBERED_EMAIL)
+                    .remove(PREF_KEY_CACHED_USERNAME)
+                    .remove(PREF_KEY_CACHED_ROLE)
+                    .remove(PREF_KEY_CACHED_APPROVED)
+                    .apply()
+            }
+
             Result.success(userEntity)
         } catch (e: Exception) {
             Log.e(TAG, "Firebase signIn failed: ${e.message}", e)
@@ -542,7 +619,7 @@ class PoultryRepository(
         }
     }
 
-    suspend fun signUpWithEmail(email: String, pass: String, fullName: String, phone: String = ""): Result<UserEntity> = withContext(Dispatchers.IO) {
+    suspend fun signUpWithEmail(email: String, pass: String, fullName: String, phone: String = "", rememberMe: Boolean = true): Result<UserEntity> = withContext(Dispatchers.IO) {
         val firebaseAuth = auth
             ?: return@withContext Result.failure(Exception("Firebase Auth ইনিশিয়ালাইজ করা যায়নি।"))
 
@@ -577,7 +654,7 @@ class PoultryRepository(
                 isApproved = isApproved,
                 registeredDate = System.currentTimeMillis(),
                 passwordHash = "",
-                rememberLogin = true,
+                rememberLogin = rememberMe,
                 isLoggedIn = true
             )
 
@@ -591,7 +668,7 @@ class PoultryRepository(
                 "approved" to userEntity.isApproved,
                 "profileImageUri" to userEntity.profileImageUri,
                 "registeredDate" to userEntity.registeredDate,
-                "rememberLogin" to true,
+                "rememberLogin" to rememberMe,
                 "isLoggedIn" to true
             )
 
@@ -603,6 +680,24 @@ class PoultryRepository(
             recomputeVisibleUsers()
 
             _currentUser.value = userEntity
+
+            if (rememberMe) {
+                prefs.edit()
+                    .putBoolean(PREF_KEY_REMEMBER, true)
+                    .putString(PREF_KEY_REMEMBERED_EMAIL, userEmail)
+                    .putString(PREF_KEY_CACHED_USERNAME, userEntity.username)
+                    .putString(PREF_KEY_CACHED_ROLE, userEntity.role)
+                    .putBoolean(PREF_KEY_CACHED_APPROVED, userEntity.isApproved)
+                    .putString(PREF_KEY_CACHED_PHONE, userEntity.phone)
+                    .putString(PREF_KEY_CACHED_AVATAR, userEntity.profileImageUri)
+                    .apply()
+            } else {
+                prefs.edit()
+                    .putBoolean(PREF_KEY_REMEMBER, false)
+                    .remove(PREF_KEY_REMEMBERED_EMAIL)
+                    .apply()
+            }
+
             Result.success(userEntity)
         } catch (e: Exception) {
             Log.e(TAG, "Firebase signUp failed: ${e.message}", e)
@@ -707,8 +802,11 @@ class PoultryRepository(
         }
         _currentUser.value = null
         prefs.edit()
+            .remove(PREF_KEY_CACHED_USERNAME)
             .remove(PREF_KEY_CACHED_ROLE)
             .remove(PREF_KEY_CACHED_APPROVED)
+            .remove(PREF_KEY_CACHED_PHONE)
+            .remove(PREF_KEY_CACHED_AVATAR)
             .apply()
     }
 
@@ -717,8 +815,25 @@ class PoultryRepository(
     }
 
     fun isUserLoggedInAndApproved(): Boolean {
+        val firebaseUser = auth?.currentUser ?: return false
+        val rememberMe = prefs.getBoolean(PREF_KEY_REMEMBER, true)
+        if (!rememberMe) return false
+
         val user = _currentUser.value
-        return auth?.currentUser != null && (user?.isApprovedUser() == true)
+        if (user != null) {
+            return user.isApprovedUser()
+        }
+        val email = firebaseUser.email ?: ""
+        if (isRootAdminEmail(email)) return true
+        return prefs.getBoolean(PREF_KEY_CACHED_APPROVED, false)
+    }
+
+    fun isRememberLoginEnabled(): Boolean = prefs.getBoolean(PREF_KEY_REMEMBER, true)
+
+    fun getRememberedEmail(): String = prefs.getString(PREF_KEY_REMEMBERED_EMAIL, "") ?: ""
+
+    fun setRememberLogin(enabled: Boolean) {
+        prefs.edit().putBoolean(PREF_KEY_REMEMBER, enabled).apply()
     }
 
     private fun mapAuthErrorToBangla(error: String): String {
@@ -963,6 +1078,182 @@ class PoultryRepository(
         }
     }
 
+    // -------------------------------------------------------------
+    // SHAREHOLDER CRUD OPERATIONS (ADMIN ONLY)
+    // -------------------------------------------------------------
+
+    suspend fun addShareholder(
+        name: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        val trimmedName = name.trim()
+        if (trimmedName.isBlank()) {
+            withContext(Dispatchers.Main) { onError("শেয়ারহোল্ডারের নাম লিখুন") }
+            return@withContext
+        }
+
+        val existing = _allShareholders.value.any { it.name.equals(trimmedName, ignoreCase = true) }
+        if (existing) {
+            withContext(Dispatchers.Main) { onError("এই নামের শেয়ারহোল্ডার ইতোমধ্যে রয়েছে") }
+            return@withContext
+        }
+
+        val id = dbRef?.child("shareholders")?.push()?.key ?: System.currentTimeMillis().toString()
+        val shareholder = ShareholderEntity(
+            id = id,
+            name = trimmedName,
+            createdAt = System.currentTimeMillis()
+        )
+
+        try {
+            dbRef?.child("shareholders")?.child(id)?.setValue(shareholder)?.await()
+            val updatedList = (_allShareholders.value + shareholder).sortedBy { it.name }
+            _allShareholders.value = updatedList
+            withContext(Dispatchers.Main) { onSuccess() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error adding shareholder: ${e.message}", e)
+            withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "শেয়ারহোল্ডার যোগ করা সম্ভব হয়নি") }
+        }
+    }
+
+    suspend fun updateShareholder(
+        id: String,
+        name: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        val trimmedName = name.trim()
+        if (trimmedName.isBlank()) {
+            withContext(Dispatchers.Main) { onError("শেয়ারহোল্ডারের নাম লিখুন") }
+            return@withContext
+        }
+
+        try {
+            val current = _allShareholders.value.find { it.id == id } ?: ShareholderEntity(id = id, name = trimmedName)
+            val updated = current.copy(name = trimmedName)
+            dbRef?.child("shareholders")?.child(id)?.setValue(updated)?.await()
+
+            // Also update shareholderName in all payments associated with this shareholder
+            val affectedPayments = _allShareholderPayments.value.filter { it.shareholderId == id }
+            if (affectedPayments.isNotEmpty()) {
+                val updates = mutableMapOf<String, Any>()
+                affectedPayments.forEach { payment ->
+                    updates["shareholder_payments/${payment.id}/shareholderName"] = trimmedName
+                }
+                dbRef?.updateChildren(updates)?.await()
+            }
+
+            val updatedList = _allShareholders.value.map { if (it.id == id) updated else it }.sortedBy { it.name }
+            _allShareholders.value = updatedList
+            withContext(Dispatchers.Main) { onSuccess() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating shareholder: ${e.message}", e)
+            withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "শেয়ারহোল্ডার পরিবর্তন করা সম্ভব হয়নি") }
+        }
+    }
+
+    suspend fun deleteShareholder(
+        id: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        try {
+            dbRef?.child("shareholders")?.child(id)?.removeValue()?.await()
+            val updatedList = _allShareholders.value.filter { it.id != id }
+            _allShareholders.value = updatedList
+            withContext(Dispatchers.Main) { onSuccess() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deleting shareholder: ${e.message}", e)
+            withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "শেয়ারহোল্ডার মুছে ফেলা সম্ভব হয়নি") }
+        }
+    }
+
+    // -------------------------------------------------------------
+    // SHAREHOLDER PAYMENT CRUD OPERATIONS
+    // -------------------------------------------------------------
+
+    suspend fun addShareholderPayment(
+        payment: ShareholderPaymentEntity,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        if (payment.shareholderName.isBlank()) {
+            withContext(Dispatchers.Main) { onError("শেয়ারহোল্ডারের নাম নির্বাচন করুন") }
+            return@withContext
+        }
+        if (payment.amount <= 0) {
+            withContext(Dispatchers.Main) { onError("সঠিক টাকার পরিমাণ দিন") }
+            return@withContext
+        }
+        if (payment.date.isBlank()) {
+            withContext(Dispatchers.Main) { onError("তারিখ নির্বাচন করুন") }
+            return@withContext
+        }
+
+        val id = if (payment.id.isNotBlank()) payment.id else (dbRef?.child("shareholder_payments")?.push()?.key ?: System.currentTimeMillis().toString())
+        val newPayment = payment.copy(id = id)
+
+        try {
+            dbRef?.child("shareholder_payments")?.child(id)?.setValue(newPayment)?.await()
+            val updatedList = (listOf(newPayment) + _allShareholderPayments.value).sortedByDescending { it.createdAt }
+            _allShareholderPayments.value = updatedList
+            withContext(Dispatchers.Main) { onSuccess() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving shareholder payment: ${e.message}", e)
+            withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "পেমেন্ট সংরক্ষণ করা সম্ভব হয়নি") }
+        }
+    }
+
+    suspend fun updateShareholderPayment(
+        payment: ShareholderPaymentEntity,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        if (payment.shareholderName.isBlank()) {
+            withContext(Dispatchers.Main) { onError("শেয়ারহোল্ডারের নাম নির্বাচন করুন") }
+            return@withContext
+        }
+        if (payment.amount <= 0) {
+            withContext(Dispatchers.Main) { onError("সঠিক টাকার পরিমাণ দিন") }
+            return@withContext
+        }
+        if (payment.date.isBlank()) {
+            withContext(Dispatchers.Main) { onError("তারিখ নির্বাচন করুন") }
+            return@withContext
+        }
+
+        try {
+            dbRef?.child("shareholder_payments")?.child(payment.id)?.setValue(payment)?.await()
+            val updatedList = _allShareholderPayments.value.map { if (it.id == payment.id) payment else it }.sortedByDescending { it.createdAt }
+            _allShareholderPayments.value = updatedList
+            withContext(Dispatchers.Main) { onSuccess() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating shareholder payment: ${e.message}", e)
+            withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "পেমেন্ট পরিবর্তন করা সম্ভব হয়নি") }
+        }
+    }
+
+    suspend fun deleteShareholderPayment(
+        id: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        try {
+            dbRef?.child("shareholder_payments")?.child(id)?.removeValue()?.await()
+            val updatedList = _allShareholderPayments.value.filter { it.id != id }
+            _allShareholderPayments.value = updatedList
+            withContext(Dispatchers.Main) { onSuccess() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deleting shareholder payment: ${e.message}", e)
+            withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "পেমেন্ট মুছে ফেলা সম্ভব হয়নি") }
+        }
+    }
+
+    // -------------------------------------------------------------
+    // RESTORE & BACKUP
+    // -------------------------------------------------------------
+
     suspend fun restoreCompleteBackup(content: SheetsBackupData) = withContext(Dispatchers.IO) {
         val reference = dbRef ?: throw Exception("Firebase Realtime Database সংযোগ পাওয়া যায়নি।")
 
@@ -995,6 +1286,16 @@ class PoultryRepository(
             updates["role_permissions"] = content.rolePermissions
         }
 
+        // Shareholders
+        if (content.shareholders.isNotEmpty()) {
+            updates["shareholders"] = content.shareholders.associateBy { it.id }
+        }
+
+        // Shareholder Payments
+        if (content.shareholderPayments.isNotEmpty()) {
+            updates["shareholder_payments"] = content.shareholderPayments.associateBy { it.id }
+        }
+
         reference.updateChildren(updates).await()
 
         // 3. Update local state flows
@@ -1007,6 +1308,12 @@ class PoultryRepository(
         if (content.rolePermissions.isNotEmpty()) {
             _rolePermissions.value = content.rolePermissions
             content.rolePermissions.values.forEach { saveRolePermissionToPrefs(it) }
+        }
+        if (content.shareholders.isNotEmpty()) {
+            _allShareholders.value = content.shareholders.sortedBy { it.name }
+        }
+        if (content.shareholderPayments.isNotEmpty()) {
+            _allShareholderPayments.value = content.shareholderPayments.sortedByDescending { it.createdAt }
         }
     }
 }

@@ -138,6 +138,16 @@ function doPost(e) {
       processedCount += syncRolePermissions(ss, data.role_permissions);
     }
 
+    // F. Sync Shareholders (Upsert)
+    if (data.shareholders && Array.isArray(data.shareholders)) {
+      processedCount += syncShareholders(ss, data.shareholders);
+    }
+
+    // G. Sync Shareholder Payments (Upsert)
+    if (data.shareholder_payments && Array.isArray(data.shareholder_payments)) {
+      processedCount += syncShareholderPayments(ss, data.shareholder_payments);
+    }
+
     // 9. Log Activity (Securely without logging tokens or personal payload)
     logBackupActivity(ss, payload, processedCount, "SUCCESS", "ক্লাউড ব্যাকআপ সফল হয়েছে");
 
@@ -423,6 +433,81 @@ function syncRolePermissions(ss, rolePermsMap) {
     sheet.getRange(sheet.getLastRow() + 1, 1, appendRows.length, appendRows[0].length).setValues(appendRows);
   }
   return keys.length;
+}
+
+function syncShareholders(ss, list) {
+  if (!list || list.length === 0) return 0;
+  var headers = ["Shareholder ID (আইডি)", "Shareholder Name (নাম)", "Created Date", "Last Synced"];
+  var sheet = getOrCreateSheet(ss, "Shareholders (শেয়ারহোল্ডার)", headers);
+  var existingMap = getRowIndexMap(sheet, 1);
+  var now = new Date();
+  var appendRows = [];
+
+  list.forEach(function(s) {
+    var idStr = String(s.id || "").trim();
+    if (!idStr) return;
+
+    var createdDate = s.createdAt ? new Date(Number(s.createdAt)) : now;
+    var rowValues = [
+      idStr,
+      sanitizeString(s.name || ""),
+      createdDate,
+      now
+    ];
+
+    if (existingMap[idStr]) {
+      sheet.getRange(existingMap[idStr], 1, 1, rowValues.length).setValues([rowValues]);
+    } else {
+      appendRows.push(rowValues);
+    }
+  });
+
+  if (appendRows.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, appendRows.length, appendRows[0].length).setValues(appendRows);
+  }
+  return list.length;
+}
+
+function syncShareholderPayments(ss, list) {
+  if (!list || list.length === 0) return 0;
+  var headers = [
+    "Payment ID (আইডি)", "Shareholder ID", "Shareholder Name (নাম)",
+    "Date (তারিখ)", "Amount (টাকার পরিমাণ ৳)", "Payment Method (মাধ্যম)",
+    "Note (মন্তব্য)", "Created Date", "Last Synced"
+  ];
+  var sheet = getOrCreateSheet(ss, "Shareholder Payments (পেমেন্ট)", headers);
+  var existingMap = getRowIndexMap(sheet, 1);
+  var now = new Date();
+  var appendRows = [];
+
+  list.forEach(function(p) {
+    var idStr = String(p.id || "").trim();
+    if (!idStr) return;
+
+    var createdDate = p.createdAt ? new Date(Number(p.createdAt)) : now;
+    var rowValues = [
+      idStr,
+      sanitizeString(p.shareholderId || ""),
+      sanitizeString(p.shareholderName || ""),
+      sanitizeString(p.date || ""),
+      Number(p.amount) || 0,
+      sanitizeString(p.paymentMethod || "Cash"),
+      sanitizeString(p.note || ""),
+      createdDate,
+      now
+    ];
+
+    if (existingMap[idStr]) {
+      sheet.getRange(existingMap[idStr], 1, 1, rowValues.length).setValues([rowValues]);
+    } else {
+      appendRows.push(rowValues);
+    }
+  });
+
+  if (appendRows.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, appendRows.length, appendRows[0].length).setValues(appendRows);
+  }
+  return list.length;
 }
 
 function logBackupActivity(ss, payload, recordCount, status, message) {

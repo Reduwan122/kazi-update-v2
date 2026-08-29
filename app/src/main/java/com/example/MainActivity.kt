@@ -26,28 +26,34 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.data.local.DailyReportEntity
 import com.example.data.local.MonthlyExpenseEntity
+import com.example.data.local.ShareholderPaymentEntity
 import com.example.ui.components.AppBottomNavBar
 import com.example.ui.components.AppSnackbarHost
+import com.example.ui.components.AppUpdateDialog
 import com.example.ui.components.BottomNavTab
 import com.example.ui.components.FarmNotificationDialog
 import com.example.ui.components.PdfPreviewModalDialog
+import com.example.ui.components.ShareholderPdfPreviewModalDialog
 import com.example.ui.components.SnackbarBottomInset
 import com.example.ui.screens.AddEditDailyReportScreen
 import com.example.ui.screens.AddEditMonthlyExpenseScreen
+import com.example.ui.screens.AddEditShareholderPaymentScreen
 import com.example.ui.screens.AdminUserManagementScreen
+import com.example.ui.screens.AllShareholderPaymentsScreen
 import com.example.ui.screens.CloudBackupScreen
 import com.example.ui.screens.DailyReportDetailScreen
 import com.example.ui.screens.DailyReportScreen
 import com.example.ui.screens.DashboardScreen
+import com.example.ui.screens.IndividualShareholderHistoryScreen
 import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.MonthlyExpenseDetailScreen
 import com.example.ui.screens.MonthlyExpenseScreen
 import com.example.ui.screens.ReportsScreen
 import com.example.ui.screens.RolePermissionEditorScreen
 import com.example.ui.screens.SettingsScreen
+import com.example.ui.screens.ShareholderSettingsScreen
 import com.example.ui.screens.SplashScreen
 import com.example.ui.screens.UserProfileScreen
-import com.example.ui.components.AppUpdateDialog
 import com.example.ui.theme.KaziAgrotechTheme
 import com.example.ui.viewmodel.PoultryViewModel
 
@@ -140,6 +146,9 @@ fun MainAppNavigation(viewModel: PoultryViewModel) {
                 onNavigateToAddExpense = { navController.navigate("add_edit_expense/0") },
                 onNavigateToEditExpense = { id -> navController.navigate("add_edit_expense/$id") },
                 onNavigateToExpenseDetail = { id -> navController.navigate("expense_detail/$id") },
+                onNavigateToAddShareholderPayment = { navController.navigate("add_shareholder_payment") },
+                onNavigateToShareholderSettings = { navController.navigate("shareholder_settings") },
+                onNavigateToShareholderPayments = { navController.navigate("all_shareholder_payments") },
                 onNavigateToAdmin = { navController.navigate("admin_management") },
                 onNavigateToRolePermissions = { role -> navController.navigate("role_permissions/$role") },
                 onNavigateToProfile = { navController.navigate("user_profile") },
@@ -276,6 +285,90 @@ fun MainAppNavigation(viewModel: PoultryViewModel) {
                 onBack = { navController.popBackStack() }
             )
         }
+
+        composable("shareholder_settings") {
+            ShareholderSettingsScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("add_shareholder_payment") {
+            AddEditShareholderPaymentScreen(
+                viewModel = viewModel,
+                paymentId = null,
+                onBack = { navController.popBackStack() },
+                onNavigateToShareholderSettings = { navController.navigate("shareholder_settings") }
+            )
+        }
+
+        composable(
+            route = "edit_shareholder_payment/{paymentId}",
+            arguments = listOf(navArgument("paymentId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val paymentId = backStackEntry.arguments?.getString("paymentId") ?: ""
+            AddEditShareholderPaymentScreen(
+                viewModel = viewModel,
+                paymentId = paymentId,
+                onBack = { navController.popBackStack() },
+                onNavigateToShareholderSettings = { navController.navigate("shareholder_settings") }
+            )
+        }
+
+        composable("all_shareholder_payments") {
+            var pdfPaymentsToPreview by remember { mutableStateOf<Pair<List<ShareholderPaymentEntity>, String>?>(null) }
+            val profile by viewModel.farmProfile.collectAsState()
+
+            AllShareholderPaymentsScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onNavigateToAddPayment = { navController.navigate("add_shareholder_payment") },
+                onNavigateToEditPayment = { pid -> navController.navigate("edit_shareholder_payment/$pid") },
+                onNavigateToShareholderHistory = { id, name -> navController.navigate("shareholder_history/$id?name=$name") },
+                onOpenPdfPreview = { list, title -> pdfPaymentsToPreview = Pair(list, title) }
+            )
+
+            if (pdfPaymentsToPreview != null) {
+                ShareholderPdfPreviewModalDialog(
+                    title = pdfPaymentsToPreview!!.second,
+                    farmProfile = profile,
+                    payments = pdfPaymentsToPreview!!.first,
+                    onDismiss = { pdfPaymentsToPreview = null }
+                )
+            }
+        }
+
+        composable(
+            route = "shareholder_history/{shareholderId}?name={name}",
+            arguments = listOf(
+                navArgument("shareholderId") { type = NavType.StringType },
+                navArgument("name") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) { backStackEntry ->
+            val shareholderId = backStackEntry.arguments?.getString("shareholderId") ?: ""
+            val nameParam = backStackEntry.arguments?.getString("name") ?: ""
+            var pdfPaymentsToPreview by remember { mutableStateOf<Pair<List<ShareholderPaymentEntity>, String>?>(null) }
+            val profile by viewModel.farmProfile.collectAsState()
+
+            IndividualShareholderHistoryScreen(
+                viewModel = viewModel,
+                shareholderIdentifier = shareholderId,
+                shareholderNameParam = nameParam,
+                onBack = { navController.popBackStack() },
+                onNavigateToAddPayment = { navController.navigate("add_shareholder_payment") },
+                onNavigateToEditPayment = { pid -> navController.navigate("edit_shareholder_payment/$pid") },
+                onOpenPdfPreview = { list, title -> pdfPaymentsToPreview = Pair(list, title) }
+            )
+
+            if (pdfPaymentsToPreview != null) {
+                ShareholderPdfPreviewModalDialog(
+                    title = pdfPaymentsToPreview!!.second,
+                    farmProfile = profile,
+                    payments = pdfPaymentsToPreview!!.first,
+                    onDismiss = { pdfPaymentsToPreview = null }
+                )
+            }
+        }
     }
 }
 
@@ -288,6 +381,9 @@ fun MainContainerScreen(
     onNavigateToAddExpense: () -> Unit,
     onNavigateToEditExpense: (Long) -> Unit,
     onNavigateToExpenseDetail: (Long) -> Unit,
+    onNavigateToAddShareholderPayment: () -> Unit = {},
+    onNavigateToShareholderSettings: () -> Unit = {},
+    onNavigateToShareholderPayments: () -> Unit = {},
     onNavigateToAdmin: () -> Unit,
     onNavigateToRolePermissions: (String) -> Unit = {},
     onNavigateToProfile: () -> Unit,
@@ -329,6 +425,7 @@ fun MainContainerScreen(
                     viewModel = viewModel,
                     onNavigateToAddReport = onNavigateToAddDailyReport,
                     onNavigateToAddExpense = onNavigateToAddExpense,
+                    onNavigateToAddShareholderPayment = onNavigateToAddShareholderPayment,
                     onNavigateToReports = { currentTab = BottomNavTab.REPORTS },
                     onNavigateToDailyReport = { currentTab = BottomNavTab.DAILY_REPORT },
                     onNavigateToExpense = { currentTab = BottomNavTab.EXPENSE },
@@ -359,13 +456,15 @@ fun MainContainerScreen(
                 BottomNavTab.REPORTS -> ReportsScreen(
                     viewModel = viewModel,
                     onOpenNotifications = { showFarmNotifications = true },
-                    onNavigateToProfile = onNavigateToProfile
+                    onNavigateToProfile = onNavigateToProfile,
+                    onNavigateToShareholderPayments = onNavigateToShareholderPayments
                 )
 
                 BottomNavTab.SETTINGS -> SettingsScreen(
                     viewModel = viewModel,
                     onNavigateToAdmin = onNavigateToAdmin,
                     onNavigateToRolePermissions = onNavigateToRolePermissions,
+                    onNavigateToShareholderSettings = onNavigateToShareholderSettings,
                     onNavigateToProfile = onNavigateToProfile,
                     onNavigateToBackupRestore = onNavigateToBackupRestore,
                     onOpenNotifications = { showFarmNotifications = true },

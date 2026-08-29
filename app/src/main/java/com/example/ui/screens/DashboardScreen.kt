@@ -57,6 +57,7 @@ fun DashboardScreen(
     viewModel: PoultryViewModel,
     onNavigateToAddReport: () -> Unit,
     onNavigateToAddExpense: () -> Unit,
+    onNavigateToAddShareholderPayment: () -> Unit = {},
     onNavigateToReports: () -> Unit,
     onNavigateToDailyReport: () -> Unit,
     onNavigateToExpense: () -> Unit,
@@ -269,9 +270,23 @@ fun DashboardScreen(
                         modifier = Modifier.weight(1f),
                         testTag = "quick_action_new_expense"
                     )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    QuickActionButton(
+                        title = "পেমেন্ট যোগ করুন",
+                        icon = Icons.Default.Payments,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        onClick = onNavigateToAddShareholderPayment,
+                        modifier = Modifier.weight(1f),
+                        testTag = "quick_action_new_shareholder_payment"
+                    )
 
                     QuickActionButton(
-                        title = "রিপোর্ট",
+                        title = "রিপোর্ট ও বিশ্লেষণ",
                         icon = Icons.Default.Analytics,
                         iconTint = MaterialTheme.colorScheme.tertiary,
                         onClick = onNavigateToReports,

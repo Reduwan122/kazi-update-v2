@@ -9,6 +9,8 @@ import com.example.data.local.DailyReportEntity
 import com.example.data.local.FarmProfileEntity
 import com.example.data.local.MonthlyExpenseEntity
 import com.example.data.local.RolePermissionConfig
+import com.example.data.local.ShareholderEntity
+import com.example.data.local.ShareholderPaymentEntity
 import com.example.data.local.UserEntity
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -123,6 +125,8 @@ class GoogleSheetsBackupManager(private val context: Context) {
         monthlyExpenses: List<MonthlyExpenseEntity>,
         users: List<UserEntity>,
         rolePermissions: Map<String, RolePermissionConfig>,
+        shareholders: List<ShareholderEntity> = emptyList(),
+        shareholderPayments: List<ShareholderPaymentEntity> = emptyList(),
         userId: String = "",
         userEmail: String = ""
     ): Result<SheetsBackupResponse> = withContext(Dispatchers.IO) {
@@ -167,7 +171,9 @@ class GoogleSheetsBackupManager(private val context: Context) {
                     dailyReports = dailyReports,
                     monthlyExpenses = monthlyExpenses,
                     users = users,
-                    rolePermissions = rolePermissions
+                    rolePermissions = rolePermissions,
+                    shareholders = shareholders,
+                    shareholderPayments = shareholderPayments
                 )
             )
 

@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
@@ -91,6 +92,7 @@ fun SettingsScreen(
     viewModel: PoultryViewModel,
     onNavigateToAdmin: () -> Unit = {},
     onNavigateToRolePermissions: (String) -> Unit = {},
+    onNavigateToShareholderSettings: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToBackupRestore: () -> Unit = {},
     onOpenNotifications: () -> Unit = {},
@@ -635,6 +637,18 @@ fun SettingsScreen(
                     )
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                    // Shareholder Settings (Admin only)
+                    if (isAdmin) {
+                        SettingsRowItem(
+                            icon = Icons.Default.Groups,
+                            title = "শেয়ারহোল্ডার সেটিংস",
+                            subtitle = "শেয়ারহোল্ডার তালিকা ও ব্যবস্থাপনা",
+                            onClick = onNavigateToShareholderSettings
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    }
 
                     // Security
                     SettingsRowItem(

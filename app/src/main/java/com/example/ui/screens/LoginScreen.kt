@@ -3,6 +3,7 @@ package com.example.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -88,9 +91,10 @@ fun LoginScreen(
 
     var fullName by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf(viewModel.getRememberedEmail()) }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var rememberMe by remember { mutableStateOf(viewModel.isRememberLoginEnabled()) }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -447,13 +451,38 @@ fun LoginScreen(
                     )
                 }
 
-                // Forgot Password link (Only on Login tab)
+                // Remember Me & Forgot Password Row
                 if (selectedTab == 0) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable { rememberMe = !rememberMe }
+                                .padding(vertical = 4.dp, horizontal = 2.dp)
+                        ) {
+                            Checkbox(
+                                checked = rememberMe,
+                                onCheckedChange = { rememberMe = it },
+                                colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "লগইন মনে রাখুন",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
+
                         TextButton(onClick = {
                             forgotEmail = email
                             showForgotPasswordDialog = true
@@ -469,10 +498,34 @@ fun LoginScreen(
                         }
                     }
                 } else {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable { rememberMe = !rememberMe }
+                            .padding(vertical = 4.dp, horizontal = 2.dp)
+                    ) {
+                        Checkbox(
+                            checked = rememberMe,
+                            onCheckedChange = { rememberMe = it },
+                            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "লগইন মনে রাখুন",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Submit Button (Login or Register)
                 Button(
@@ -497,6 +550,7 @@ fun LoginScreen(
                                 pass = password,
                                 fullName = fullName,
                                 phone = phone,
+                                rememberMe = rememberMe,
                                 onSuccess = { user ->
                                     isLoading = false
                                     if (user.isApprovedUser()) {
@@ -516,6 +570,7 @@ fun LoginScreen(
                             viewModel.login(
                                 email = email,
                                 pass = password,
+                                rememberMe = rememberMe,
                                 onSuccess = { user ->
                                     isLoading = false
                                     if (user.isApprovedUser()) {

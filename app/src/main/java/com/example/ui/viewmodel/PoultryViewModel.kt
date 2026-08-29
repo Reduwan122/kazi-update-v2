@@ -19,6 +19,8 @@ import com.example.data.backup.SheetsBackupWorker
 import com.example.data.local.DailyReportEntity
 import com.example.data.local.FarmProfileEntity
 import com.example.data.local.MonthlyExpenseEntity
+import com.example.data.local.ShareholderEntity
+import com.example.data.local.ShareholderPaymentEntity
 import com.example.data.local.UserEntity
 import com.example.data.repository.PoultryRepository
 import com.example.data.update.AppUpdateInfo
@@ -59,6 +61,8 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
     val currentUser: StateFlow<UserEntity?>
     val allUsers: StateFlow<List<UserEntity>>
     val rolePermissions: StateFlow<Map<String, com.example.data.local.RolePermissionConfig>>
+    val shareholders: StateFlow<List<ShareholderEntity>>
+    val shareholderPayments: StateFlow<List<ShareholderPaymentEntity>>
     val dashboardStats: StateFlow<DashboardStats>
     val stockLedger: StateFlow<Map<String, DailyStockRecord>>
     val syncStatus = MutableStateFlow("ফায়ারবেস ক্লাউড সিঙ্ক সফল")
@@ -149,6 +153,18 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
                 "SUPERVISOR" to com.example.data.local.RolePermissionConfig.getDefaultPermissionsForRole("SUPERVISOR"),
                 "WORKER" to com.example.data.local.RolePermissionConfig.getDefaultPermissionsForRole("WORKER")
             )
+        )
+
+        shareholders = repository.allShareholders.stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            emptyList()
+        )
+
+        shareholderPayments = repository.allShareholderPayments.stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            emptyList()
         )
 
         stockLedger = combine(dailyReports, farmProfile) { reportsList, profile ->
@@ -634,9 +650,9 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
     }
 
     // Real Firebase Auth
-    fun login(email: String, pass: String, onSuccess: (UserEntity) -> Unit, onError: (String) -> Unit) {
+    fun login(email: String, pass: String, rememberMe: Boolean = true, onSuccess: (UserEntity) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            val result = repository.signInWithEmail(email, pass)
+            val result = repository.signInWithEmail(email, pass, rememberMe)
             if (result.isSuccess) {
                 val user = result.getOrNull() ?: UserEntity()
                 onSuccess(user)
@@ -646,9 +662,9 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun register(email: String, pass: String, fullName: String, phone: String = "", onSuccess: (UserEntity) -> Unit, onError: (String) -> Unit) {
+    fun register(email: String, pass: String, fullName: String, phone: String = "", rememberMe: Boolean = true, onSuccess: (UserEntity) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            val result = repository.signUpWithEmail(email, pass, fullName, phone)
+            val result = repository.signUpWithEmail(email, pass, fullName, phone, rememberMe)
             if (result.isSuccess) {
                 val user = result.getOrNull() ?: UserEntity()
                 onSuccess(user)
@@ -657,6 +673,10 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
             }
         }
     }
+
+    fun isRememberLoginEnabled(): Boolean = repository.isRememberLoginEnabled()
+    fun getRememberedEmail(): String = repository.getRememberedEmail()
+    fun setRememberLogin(enabled: Boolean) = repository.setRememberLogin(enabled)
 
     fun checkUserApproval(onApproved: () -> Unit, onNotApproved: () -> Unit) {
         viewModelScope.launch {
@@ -787,6 +807,8 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
                 monthlyExpenses = expenses.value,
                 users = allUsers.value,
                 rolePermissions = rolePermissions.value,
+                shareholders = shareholders.value,
+                shareholderPayments = shareholderPayments.value,
                 userId = user?.id ?: "",
                 userEmail = user?.email ?: ""
             )
@@ -891,6 +913,123 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
 
     fun dismissUpdateDialog() {
         appUpdateManager.dismissUpdate()
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Shareholder Management (Admin only)
+    // ══════════════════════════════════════════════════════════════════════
+
+    fun addShareholder(name: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            repository.addShareholder(
+                name = name,
+                onSuccess = {
+                    SnackbarController.showMessage("শেয়ারহোল্ডার সফলভাবে যোগ করা হয়েছে")
+                    onSuccess()
+                },
+                onError = { err ->
+                    SnackbarController.showError(err)
+                    onError(err)
+                }
+            )
+        }
+    }
+
+    fun updateShareholder(id: String, name: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            repository.updateShareholder(
+                id = id,
+                name = name,
+                onSuccess = {
+                    SnackbarController.showMessage("শেয়ারহোল্ডারের নাম সফলভাবে পরিবর্তন করা হয়েছে")
+                    onSuccess()
+                },
+                onError = { err ->
+                    SnackbarController.showError(err)
+                    onError(err)
+                }
+            )
+        }
+    }
+
+    fun deleteShareholder(id: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            repository.deleteShareholder(
+                id = id,
+                onSuccess = {
+                    SnackbarController.showMessage("শেয়ারহোল্ডার মুছে ফেলা হয়েছে")
+                    onSuccess()
+                },
+                onError = { err ->
+                    SnackbarController.showError(err)
+                    onError(err)
+                }
+            )
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Shareholder Payment Management
+    // ══════════════════════════════════════════════════════════════════════
+
+    fun addShareholderPayment(
+        payment: ShareholderPaymentEntity,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            repository.addShareholderPayment(
+                payment = payment,
+                onSuccess = {
+                    SnackbarController.showMessage("পেমেন্ট সফলভাবে সংরক্ষণ করা হয়েছে")
+                    onSuccess()
+                },
+                onError = { err ->
+                    SnackbarController.showError(err)
+                    onError(err)
+                }
+            )
+        }
+    }
+
+    fun updateShareholderPayment(
+        payment: ShareholderPaymentEntity,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            repository.updateShareholderPayment(
+                payment = payment,
+                onSuccess = {
+                    SnackbarController.showMessage("পেমেন্ট সফলভাবে পরিবর্তন করা হয়েছে")
+                    onSuccess()
+                },
+                onError = { err ->
+                    SnackbarController.showError(err)
+                    onError(err)
+                }
+            )
+        }
+    }
+
+    fun deleteShareholderPayment(
+        id: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            repository.deleteShareholderPayment(
+                id = id,
+                onSuccess = {
+                    SnackbarController.showMessage("পেমেন্ট সফলভাবে মুছে ফেলা হয়েছে")
+                    onSuccess()
+                },
+                onError = { err ->
+                    SnackbarController.showError(err)
+                    onError(err)
+                }
+            )
+        }
     }
 }
 
