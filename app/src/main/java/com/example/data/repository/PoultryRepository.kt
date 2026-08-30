@@ -431,9 +431,71 @@ class PoultryRepository(
                     val reportsList = mutableListOf<DailyReportEntity>()
                     if (snapshot.exists() && snapshot.hasChildren()) {
                         for (child in snapshot.children) {
-                            val report = child.getValue(DailyReportEntity::class.java)
-                            if (report != null) {
-                                reportsList.add(report)
+                            try {
+                                var report: DailyReportEntity? = null
+                                try {
+                                    report = child.getValue(DailyReportEntity::class.java)
+                                } catch (e: Throwable) {
+                                    Log.w(TAG, "Direct parsing failed for daily report: ${e.message}")
+                                }
+                                if (report == null || report.id == 0L || report.date.isBlank()) {
+                                    val id = child.child("id").getValue(Long::class.java)
+                                        ?: (child.key?.toLongOrNull() ?: System.currentTimeMillis())
+                                    val date = child.child("date").getValue(String::class.java) ?: ""
+                                    val currentBirds = child.child("currentBirds").getValue(Long::class.java)?.toInt()
+                                        ?: child.child("currentBirds").getValue(Int::class.java) ?: 0
+                                    val deadBirds = child.child("deadBirds").getValue(Long::class.java)?.toInt()
+                                        ?: child.child("deadBirds").getValue(Int::class.java) ?: 0
+                                    val eggProduction = child.child("eggProduction").getValue(Long::class.java)?.toInt()
+                                        ?: child.child("eggProduction").getValue(Int::class.java) ?: 0
+                                    val eggSold = child.child("eggSold").getValue(Long::class.java)?.toInt()
+                                        ?: child.child("eggSold").getValue(Int::class.java) ?: 0
+                                    val eggPrice = child.child("eggPrice").getValue(Double::class.java)
+                                        ?: child.child("eggPrice").getValue(Long::class.java)?.toDouble() ?: 0.0
+                                    val totalSale = child.child("totalSale").getValue(Double::class.java)
+                                        ?: child.child("totalSale").getValue(Long::class.java)?.toDouble() ?: 0.0
+                                    val medicineCost = child.child("medicineCost").getValue(Double::class.java)
+                                        ?: child.child("medicineCost").getValue(Long::class.java)?.toDouble() ?: 0.0
+                                    val currentStock = child.child("currentStock").getValue(Long::class.java)?.toInt()
+                                        ?: child.child("currentStock").getValue(Int::class.java) ?: 0
+                                    val otherStockIn = child.child("otherStockIn").getValue(Long::class.java)?.toInt()
+                                        ?: child.child("otherStockIn").getValue(Int::class.java) ?: 0
+                                    val otherStockOut = child.child("otherStockOut").getValue(Long::class.java)?.toInt()
+                                        ?: child.child("otherStockOut").getValue(Int::class.java) ?: 0
+                                    val stockAdjustment = child.child("stockAdjustment").getValue(Long::class.java)?.toInt()
+                                        ?: child.child("stockAdjustment").getValue(Int::class.java) ?: 0
+                                    val adjReason = child.child("adjustmentReason").getValue(String::class.java) ?: ""
+                                    val remarks = child.child("remarks").getValue(String::class.java) ?: ""
+                                    val createdAt = child.child("createdAt").getValue(Long::class.java) ?: System.currentTimeMillis()
+                                    val updatedAt = child.child("updatedAt").getValue(Long::class.java) ?: createdAt
+
+                                    if (date.isNotBlank()) {
+                                        report = DailyReportEntity(
+                                            id = id,
+                                            date = date,
+                                            currentBirds = currentBirds,
+                                            deadBirds = deadBirds,
+                                            eggProduction = eggProduction,
+                                            eggSold = eggSold,
+                                            eggPrice = eggPrice,
+                                            totalSale = totalSale,
+                                            medicineCost = medicineCost,
+                                            currentStock = currentStock,
+                                            otherStockIn = otherStockIn,
+                                            otherStockOut = otherStockOut,
+                                            stockAdjustment = stockAdjustment,
+                                            adjustmentReason = adjReason,
+                                            remarks = remarks,
+                                            createdAt = createdAt,
+                                            updatedAt = updatedAt
+                                        )
+                                    }
+                                }
+                                if (report != null && report.date.isNotBlank()) {
+                                    reportsList.add(report)
+                                }
+                            } catch (e: Throwable) {
+                                Log.w(TAG, "Error parsing daily report node: ${e.message}")
                             }
                         }
                     }
@@ -451,9 +513,63 @@ class PoultryRepository(
                     val expenseList = mutableListOf<MonthlyExpenseEntity>()
                     if (snapshot.exists() && snapshot.hasChildren()) {
                         for (child in snapshot.children) {
-                            val expense = child.getValue(MonthlyExpenseEntity::class.java)
-                            if (expense != null) {
-                                expenseList.add(expense)
+                            try {
+                                var expense: MonthlyExpenseEntity? = null
+                                try {
+                                    expense = child.getValue(MonthlyExpenseEntity::class.java)
+                                } catch (e: Throwable) {
+                                    Log.w(TAG, "Direct parsing failed for expense: ${e.message}")
+                                }
+                                if (expense == null || expense.id == 0L || expense.date.isBlank()) {
+                                    val id = child.child("id").getValue(Long::class.java)
+                                        ?: (child.key?.toLongOrNull() ?: System.currentTimeMillis())
+                                    val date = child.child("date").getValue(String::class.java) ?: ""
+                                    val feedCost = child.child("feedCost").getValue(Double::class.java)
+                                        ?: child.child("feedCost").getValue(Long::class.java)?.toDouble() ?: 0.0
+                                    val medicineCost = child.child("medicineCost").getValue(Double::class.java)
+                                        ?: child.child("medicineCost").getValue(Long::class.java)?.toDouble() ?: 0.0
+                                    val staffMarket = child.child("staffMarket").getValue(Double::class.java)
+                                        ?: child.child("staffMarket").getValue(Long::class.java)?.toDouble() ?: 0.0
+                                    val staffSalary = child.child("staffSalary").getValue(Double::class.java)
+                                        ?: child.child("staffSalary").getValue(Long::class.java)?.toDouble() ?: 0.0
+                                    val vehicleRepair = child.child("vehicleRepair").getValue(Double::class.java)
+                                        ?: child.child("vehicleRepair").getValue(Long::class.java)?.toDouble() ?: 0.0
+                                    val assets = child.child("assets").getValue(Double::class.java)
+                                        ?: child.child("assets").getValue(Long::class.java)?.toDouble() ?: 0.0
+                                    val electricityBill = child.child("electricityBill").getValue(Double::class.java)
+                                        ?: child.child("electricityBill").getValue(Long::class.java)?.toDouble() ?: 0.0
+                                    val otherExpense = child.child("otherExpense").getValue(Double::class.java)
+                                        ?: child.child("otherExpense").getValue(Long::class.java)?.toDouble() ?: 0.0
+                                    val totalExpense = child.child("totalExpense").getValue(Double::class.java)
+                                        ?: child.child("totalExpense").getValue(Long::class.java)?.toDouble() ?: 0.0
+                                    val remarks = child.child("remarks").getValue(String::class.java) ?: ""
+                                    val createdAt = child.child("createdAt").getValue(Long::class.java) ?: System.currentTimeMillis()
+                                    val updatedAt = child.child("updatedAt").getValue(Long::class.java) ?: createdAt
+
+                                    if (date.isNotBlank()) {
+                                        expense = MonthlyExpenseEntity(
+                                            id = id,
+                                            date = date,
+                                            feedCost = feedCost,
+                                            medicineCost = medicineCost,
+                                            staffMarket = staffMarket,
+                                            staffSalary = staffSalary,
+                                            vehicleRepair = vehicleRepair,
+                                            assets = assets,
+                                            electricityBill = electricityBill,
+                                            otherExpense = otherExpense,
+                                            totalExpense = totalExpense,
+                                            remarks = remarks,
+                                            createdAt = createdAt,
+                                            updatedAt = updatedAt
+                                        )
+                                    }
+                                }
+                                if (expense != null && expense.date.isNotBlank()) {
+                                    expenseList.add(expense)
+                                }
+                            } catch (e: Throwable) {
+                                Log.w(TAG, "Error parsing monthly expense: ${e.message}")
                             }
                         }
                     }
@@ -469,10 +585,43 @@ class PoultryRepository(
             reference.child("farm_profile").addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
-                        val profile = snapshot.getValue(FarmProfileEntity::class.java)
-                        if (profile != null) {
+                        try {
+                            var profile: FarmProfileEntity? = null
+                            try {
+                                profile = snapshot.getValue(FarmProfileEntity::class.java)
+                            } catch (e: Throwable) {
+                                Log.w(TAG, "Direct parsing failed for farm_profile: ${e.message}")
+                            }
+                            if (profile == null) {
+                                val farmName = snapshot.child("farmName").getValue(String::class.java) ?: "কাজী এগ্রোটেক"
+                                val ownerName = snapshot.child("ownerName").getValue(String::class.java) ?: "মোঃ আব্দুল্লাহ"
+                                val mobile = snapshot.child("mobileNumber").getValue(String::class.java) ?: "০১৭১২-৩৪৫৬৭৮"
+                                val address = snapshot.child("address").getValue(String::class.java) ?: "খামার পাড়া, গাজীপুর সদর, গাজীপুর"
+                                val logoUri = snapshot.child("logoUri").getValue(String::class.java) ?: ""
+                                val logoEmoji = snapshot.child("logoEmoji").getValue(String::class.java) ?: "🐔"
+                                val autoBackup = snapshot.child("autoBackup").getValue(Boolean::class.java) ?: true
+                                val isDarkMode = snapshot.child("isDarkMode").getValue(Boolean::class.java) ?: false
+                                val initialStock = snapshot.child("initialOpeningStock").getValue(Long::class.java)?.toInt()
+                                    ?: snapshot.child("initialOpeningStock").getValue(Int::class.java) ?: 0
+                                val initialDate = snapshot.child("initialOpeningDate").getValue(String::class.java) ?: ""
+                                profile = FarmProfileEntity(
+                                    id = 1,
+                                    farmName = farmName,
+                                    ownerName = ownerName,
+                                    mobileNumber = mobile,
+                                    address = address,
+                                    logoUri = logoUri,
+                                    logoEmoji = logoEmoji,
+                                    autoBackup = autoBackup,
+                                    isDarkMode = isDarkMode,
+                                    initialOpeningStock = initialStock,
+                                    initialOpeningDate = initialDate
+                                )
+                            }
                             _farmProfile.value = profile
                             saveFarmProfileToPrefs(profile)
+                        } catch (e: Throwable) {
+                            Log.w(TAG, "Error parsing farm_profile: ${e.message}")
                         }
                     }
                 }
@@ -486,15 +635,23 @@ class PoultryRepository(
             reference.child("role_permissions").addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
-                        val currentMap = _rolePermissions.value.toMutableMap()
-                        for (child in snapshot.children) {
-                            val config = child.getValue(RolePermissionConfig::class.java)
-                            if (config != null) {
-                                currentMap[config.roleKey.uppercase()] = config
-                                saveRolePermissionToPrefs(config)
+                        try {
+                            val currentMap = _rolePermissions.value.toMutableMap()
+                            for (child in snapshot.children) {
+                                try {
+                                    val config = child.getValue(RolePermissionConfig::class.java)
+                                    if (config != null) {
+                                        currentMap[config.roleKey.uppercase()] = config
+                                        saveRolePermissionToPrefs(config)
+                                    }
+                                } catch (e: Throwable) {
+                                    Log.w(TAG, "Error parsing role permission item: ${e.message}")
+                                }
                             }
+                            _rolePermissions.value = currentMap
+                        } catch (e: Throwable) {
+                            Log.w(TAG, "Error parsing role permissions: ${e.message}")
                         }
-                        _rolePermissions.value = currentMap
                     }
                 }
 
