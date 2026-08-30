@@ -53,13 +53,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.local.FarmProfileEntity
-import com.example.data.local.ShareholderPaymentEntity
+import com.example.data.local.StaffPaymentEntity
 
 @Composable
-fun ShareholderPdfPreviewModalDialog(
+fun StaffPdfPreviewModalDialog(
     title: String,
     farmProfile: FarmProfileEntity,
-    payments: List<ShareholderPaymentEntity>,
+    payments: List<StaffPaymentEntity>,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -122,11 +122,11 @@ fun ShareholderPdfPreviewModalDialog(
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             IconButton(
                                 onClick = {
-                                    val printDocName = "Kazi_Agrotech_Shareholder_${System.currentTimeMillis()}"
-                                    printShareholderHtml(
+                                    val printDocName = "Kazi_Agrotech_Staff_${System.currentTimeMillis()}"
+                                    printStaffHtml(
                                         context = context,
                                         docName = printDocName,
-                                        html = generateShareholderHtml(
+                                        html = generateStaffHtml(
                                             title = title,
                                             farmProfile = farmProfile,
                                             payments = sortedPayments
@@ -338,7 +338,7 @@ fun ShareholderPdfPreviewModalDialog(
                                             .padding(horizontal = 8.dp, vertical = 6.dp)
                                     ) {
                                         Text("ক্রঃ", modifier = Modifier.weight(0.5f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                                        Text("শেয়ারহোল্ডার", modifier = Modifier.weight(1.8f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text("স্টাফের নাম", modifier = Modifier.weight(1.8f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                         Text("তারিখ", modifier = Modifier.weight(1.2f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                         Text("পরিমাণ", modifier = Modifier.weight(1.4f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
                                         Text("মাধ্যম", modifier = Modifier.weight(1.0f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
@@ -353,7 +353,7 @@ fun ShareholderPdfPreviewModalDialog(
                                                 .padding(horizontal = 8.dp, vertical = 5.dp)
                                         ) {
                                             Text(BanglaNumberFormatter.formatNumber(i + 1), modifier = Modifier.weight(0.5f), fontSize = 10.5.sp, textAlign = TextAlign.Center)
-                                            Text(p.shareholderName, modifier = Modifier.weight(1.8f), fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold)
+                                            Text(p.staffName, modifier = Modifier.weight(1.8f), fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold)
                                             Text(p.date, modifier = Modifier.weight(1.2f), fontSize = 10.5.sp)
                                             Text(BanglaNumberFormatter.formatCurrency(p.amount), modifier = Modifier.weight(1.4f), fontSize = 10.5.sp, textAlign = TextAlign.End, fontWeight = FontWeight.SemiBold)
                                             Text(p.paymentMethod, modifier = Modifier.weight(1.0f), fontSize = 10.5.sp, textAlign = TextAlign.Center)
@@ -419,11 +419,11 @@ fun ShareholderPdfPreviewModalDialog(
 
                         Button(
                             onClick = {
-                                val printDocName = "Kazi_Agrotech_Shareholder_${System.currentTimeMillis()}"
-                                printShareholderHtml(
+                                val printDocName = "Kazi_Agrotech_Staff_${System.currentTimeMillis()}"
+                                printStaffHtml(
                                     context = context,
                                     docName = printDocName,
-                                    html = generateShareholderHtml(
+                                    html = generateStaffHtml(
                                         title = title,
                                         farmProfile = farmProfile,
                                         payments = sortedPayments
@@ -445,7 +445,7 @@ fun ShareholderPdfPreviewModalDialog(
     }
 }
 
-private fun printShareholderHtml(context: Context, docName: String, html: String) {
+private fun printStaffHtml(context: Context, docName: String, html: String) {
     try {
         val webView = WebView(context)
         webView.webViewClient = object : WebViewClient() {
@@ -467,10 +467,10 @@ private fun printShareholderHtml(context: Context, docName: String, html: String
     }
 }
 
-private fun generateShareholderHtml(
+private fun generateStaffHtml(
     title: String,
     farmProfile: FarmProfileEntity,
-    payments: List<ShareholderPaymentEntity>
+    payments: List<StaffPaymentEntity>
 ): String {
     val totalAmount = payments.sumOf { it.amount }
     val currentDateBangla = BanglaNumberFormatter.formatBanglaDate(BanglaNumberFormatter.getCurrentDateFormatted())
@@ -511,7 +511,7 @@ private fun generateShareholderHtml(
         rowsHtml.append("""
             <tr class="$bgClass">
                 <td style="text-align: center;">${BanglaNumberFormatter.formatNumber(index + 1)}</td>
-                <td style="text-align: left; font-weight: 600;">${p.shareholderName}</td>
+                <td style="text-align: left; font-weight: 600;">${p.staffName}</td>
                 <td style="text-align: center;">${p.date}</td>
                 <td style="text-align: right; font-weight: 600;">${BanglaNumberFormatter.formatCurrency(p.amount)}</td>
                 <td style="text-align: center;">${p.paymentMethod}</td>
@@ -590,7 +590,7 @@ private fun generateShareholderHtml(
                         <thead>
                             <tr>
                                 <th style="width: 6%;">ক্রঃ</th>
-                                <th style="width: 25%;">শেয়ারহোল্ডার</th>
+                                <th style="width: 25%;">স্টাফের নাম</th>
                                 <th style="width: 15%;">তারিখ</th>
                                 <th style="width: 20%;">পরিমাণ</th>
                                 <th style="width: 14%;">মাধ্যম</th>
@@ -617,3 +617,4 @@ private fun generateShareholderHtml(
         </html>
     """.trimIndent()
 }
+

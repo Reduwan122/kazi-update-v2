@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -32,10 +34,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,6 +63,7 @@ fun DashboardScreen(
     onNavigateToAddReport: () -> Unit,
     onNavigateToAddExpense: () -> Unit,
     onNavigateToAddShareholderPayment: () -> Unit = {},
+    onNavigateToAddStaffPayment: () -> Unit = {},
     onNavigateToReports: () -> Unit,
     onNavigateToDailyReport: () -> Unit,
     onNavigateToExpense: () -> Unit,
@@ -65,6 +71,7 @@ fun DashboardScreen(
     onNavigateToProfile: () -> Unit = {}
 ) {
     val haptics = rememberHaptics()
+    var showPaymentTypeDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val dailyReports by viewModel.dailyReports.collectAsState()
     val expenses by viewModel.expenses.collectAsState()
     val stats by viewModel.dashboardStats.collectAsState()
@@ -282,9 +289,9 @@ fun DashboardScreen(
                             title = "পেমেন্ট যোগ করুন",
                             icon = Icons.Default.Payments,
                             iconTint = MaterialTheme.colorScheme.primary,
-                            onClick = onNavigateToAddShareholderPayment,
+                            onClick = { showPaymentTypeDialog = true },
                             modifier = Modifier.weight(1f),
-                            testTag = "quick_action_new_shareholder_payment"
+                            testTag = "quick_action_new_payment"
                         )
                     }
 
@@ -303,6 +310,124 @@ fun DashboardScreen(
             ProductionChartCard(reports = dailyReports)
 
             Spacer(modifier = Modifier.height(72.dp))
+        }
+
+        if (showPaymentTypeDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showPaymentTypeDialog = false },
+                title = {
+                    Text(
+                        text = "পেমেন্টের ধরণ নির্বাচন করুন",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    showPaymentTypeDialog = false
+                                    onNavigateToAddShareholderPayment()
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Payments,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Column {
+                                    Text(
+                                        text = "👥 শেয়ারহোল্ডার পেমেন্ট",
+                                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "শেয়ারহোল্ডারদের লভ্যাংশ বা পেমেন্ট",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    showPaymentTypeDialog = false
+                                    onNavigateToAddStaffPayment()
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.secondaryContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Payments,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Column {
+                                    Text(
+                                        text = "👨‍🌾 স্টাফ পেমেন্ট",
+                                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "স্টাফ/কর্মীদের স্বতন্ত্র পেমেন্ট রেকর্ড",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { showPaymentTypeDialog = false }) {
+                        Text("বাতিল")
+                    }
+                }
+            )
         }
     }
 }

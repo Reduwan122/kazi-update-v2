@@ -325,7 +325,7 @@ fun PdfPreviewModalDialog(
                                 else -> DailyReportPdfTable(sortedDailyReports)
                             }
 
-                            Spacer(modifier = Modifier.height(55.dp))
+                            Spacer(modifier = Modifier.height(38.dp))
 
                             // Signature Lines matching official paper registers
                             Row(
@@ -335,16 +335,16 @@ fun PdfPreviewModalDialog(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Box(
                                         modifier = Modifier
-                                            .width(100.dp)
+                                            .width(110.dp)
                                             .height(1.dp)
-                                            .background(Color.Gray)
+                                            .background(Color.DarkGray)
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         text = "প্রস্তুতকারক",
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             color = Color.Black,
-                                            fontWeight = FontWeight.Medium
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                     )
                                 }
@@ -352,22 +352,22 @@ fun PdfPreviewModalDialog(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Box(
                                         modifier = Modifier
-                                            .width(100.dp)
+                                            .width(110.dp)
                                             .height(1.dp)
-                                            .background(Color.Gray)
+                                            .background(Color.DarkGray)
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         text = "অনুমোদনকারী",
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             color = Color.Black,
-                                            fontWeight = FontWeight.Medium
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                     )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
                             Text(
                                 text = "কাজী এগ্রোটেক স্বয়ংক্রিয় ফার্ম ম্যানেজমেন্ট সিস্টেম দ্বারা প্রস্তুতকৃত।",
                                 style = MaterialTheme.typography.bodySmall.copy(
@@ -895,11 +895,12 @@ fun printHtmlDocument(context: Context, docName: String, html: String) {
             override fun onPageFinished(view: WebView?, url: String?) {
                 val printManager = context.getSystemService(Context.PRINT_SERVICE) as? PrintManager
                 val printAdapter = webView.createPrintDocumentAdapter(docName)
-                printManager?.print(
-                    docName,
-                    printAdapter,
-                    PrintAttributes.Builder().build()
-                )
+                val printAttributes = PrintAttributes.Builder()
+                    .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+                    .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
+                    .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+                    .build()
+                printManager?.print(docName, printAdapter, printAttributes)
             }
         }
         webView.loadDataWithBaseURL(null, html, "text/html; charset=utf-8", "UTF-8", null)
@@ -922,7 +923,7 @@ fun generateHtmlContent(
     val currentDateStr = BanglaNumberFormatter.toBanglaDigits(SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date()))
 
     val logoHtml = if (farmProfile.logoUri.isNotBlank()) {
-        """<img src="${farmProfile.logoUri}" style="max-height: 65px; max-width: 85px; object-fit: contain; border-radius: 6px;" alt="Farm Logo" />"""
+        """<img src="${farmProfile.logoUri}" style="max-height: 58px; max-width: 80px; object-fit: contain; border-radius: 4px;" alt="Farm Logo" />"""
     } else if (farmProfile.logoEmoji.isNotBlank() && farmProfile.logoEmoji != "🐔") {
         """<div class="emoji-logo">${farmProfile.logoEmoji}</div>"""
     } else {
@@ -1164,7 +1165,8 @@ fun generateHtmlContent(
             }
         }
 
-        val tableClass = if (rowCount <= 12) "table-spacious" else "table-standard"
+        val tableClass = if (rowCount <= 12) "table-spacious" else if (rowCount <= 22) "table-standard" else "table-compact"
+        val sigMargin = if (rowCount <= 12) "42px" else if (rowCount <= 22) "34px" else "26px"
 
         pagesHtml.append("""
             <div class="page-container">
@@ -1180,7 +1182,7 @@ fun generateHtmlContent(
                         <div class="header-spacer"></div>
                     </div>
                     <div class="meta">
-                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;">
                             <strong>$title</strong>
                             <span class="report-month-tag">মাসঃ $monthLabel</span>
                         </div>
@@ -1195,7 +1197,7 @@ fun generateHtmlContent(
                         </tbody>
                     </table>
                 </div>
-                <div class="footer-signatures">
+                <div class="footer-signatures" style="margin-top: $sigMargin;">
                     <div class="sig-line">প্রস্তুতকারক</div>
                     <div class="sig-line">অনুমোদনকারী</div>
                 </div>
@@ -1212,7 +1214,7 @@ fun generateHtmlContent(
             <style>
                 @page {
                     size: A4 portrait;
-                    margin: 12mm 12mm 14mm 12mm;
+                    margin: 8mm 10mm 8mm 10mm;
                 }
 
                 *, *:before, *:after {
@@ -1225,21 +1227,16 @@ fun generateHtmlContent(
                     padding: 0;
                     color: #111111;
                     background-color: #ffffff;
-                    font-size: 12px;
+                    font-size: 11.5px;
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
                 }
 
                 .page-container {
                     width: 100%;
-                    min-height: 268mm;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
                     page-break-after: always;
                     break-after: page;
                     box-sizing: border-box;
-                    padding-bottom: 2mm;
                 }
 
                 .page-container:last-child {
@@ -1248,7 +1245,6 @@ fun generateHtmlContent(
                 }
 
                 .page-body {
-                    flex: 1 0 auto;
                     width: 100%;
                 }
 
@@ -1258,25 +1254,25 @@ fun generateHtmlContent(
                     align-items: center;
                     justify-content: space-between;
                     border-bottom: 2.5px solid #0D631B;
-                    padding-top: 2px;
-                    padding-bottom: 8px;
-                    margin-bottom: 12px;
+                    padding-top: 0;
+                    padding-bottom: 6px;
+                    margin-bottom: 8px;
                 }
 
                 .header-logo {
-                    flex: 0 0 85px;
+                    flex: 0 0 80px;
                     text-align: left;
                 }
 
                 .header-logo img {
-                    max-height: 65px;
-                    max-width: 85px;
+                    max-height: 58px;
+                    max-width: 80px;
                     object-fit: contain;
-                    border-radius: 6px;
+                    border-radius: 4px;
                 }
 
                 .header-logo .emoji-logo {
-                    font-size: 38px;
+                    font-size: 34px;
                     line-height: 1;
                 }
 
@@ -1286,24 +1282,24 @@ fun generateHtmlContent(
                 }
 
                 .header-text .title {
-                    font-size: 20px;
+                    font-size: 19.5px;
                     font-weight: bold;
                     color: #0D631B;
                     margin: 0;
                     line-height: 1.2;
-                    letter-spacing: 0.4px;
+                    letter-spacing: 0.3px;
                 }
 
                 .header-text .subtitle {
-                    font-size: 11.5px;
+                    font-size: 11px;
                     color: #222222;
-                    margin: 2px 0;
+                    margin: 1.5px 0;
                     font-weight: 500;
-                    line-height: 1.3;
+                    line-height: 1.25;
                 }
 
                 .header-spacer {
-                    flex: 0 0 85px;
+                    flex: 0 0 80px;
                 }
 
                 /* ─── রিপোর্ট মেটাডাটা ও তারিখ ─── */
@@ -1311,8 +1307,8 @@ fun generateHtmlContent(
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    margin-bottom: 10px;
-                    font-size: 12.5px;
+                    margin-bottom: 8px;
+                    font-size: 12px;
                     font-weight: 600;
                 }
 
@@ -1328,13 +1324,13 @@ fun generateHtmlContent(
                     padding: 2px 8px;
                     border-radius: 4px;
                     border: 1px solid #C8E6C9;
-                    font-size: 11.5px;
+                    font-size: 11px;
                     display: inline-block;
                 }
 
                 .meta span {
                     color: #444444;
-                    font-size: 12px;
+                    font-size: 11.5px;
                 }
 
                 /* ─── ডেটা টেবিল ─── */
@@ -1342,12 +1338,11 @@ fun generateHtmlContent(
                     width: 100%;
                     border-collapse: separate;
                     border-spacing: 0;
-                    margin-top: 6px;
-                    font-size: 11.5px;
-                    border-radius: 6px;
+                    margin-top: 4px;
+                    border-radius: 5px;
                     overflow: hidden;
                     border: 1px solid #D0D0D0;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+                    box-shadow: 0 1px 4px rgba(0,0,0,0.02);
                     page-break-inside: auto;
                 }
 
@@ -1358,15 +1353,22 @@ fun generateHtmlContent(
                     font-weight: 500;
                 }
 
-                table.table-standard th, table.table-standard td {
-                    padding: 4.8px 7px;
-                    line-height: 1.28;
+                table.table-spacious th, table.table-spacious td {
+                    padding: 6.5px 8px;
+                    line-height: 1.32;
+                    font-size: 11.5px;
                 }
 
-                table.table-spacious th, table.table-spacious td {
-                    padding: 7px 9px;
-                    line-height: 1.35;
-                    font-size: 12px;
+                table.table-standard th, table.table-standard td {
+                    padding: 4.5px 6.5px;
+                    line-height: 1.25;
+                    font-size: 11px;
+                }
+
+                table.table-compact th, table.table-compact td {
+                    padding: 3.5px 5.5px;
+                    line-height: 1.2;
+                    font-size: 10px;
                 }
 
                 th:last-child, td:last-child {
@@ -1382,9 +1384,8 @@ fun generateHtmlContent(
                     color: #FFFFFF !important;
                     font-weight: 600;
                     text-align: center;
-                    font-size: 11.5px;
                     letter-spacing: 0.2px;
-                    padding: 6px 7px;
+                    padding: 5px 6px;
                 }
 
                 td.text-center {
@@ -1402,28 +1403,27 @@ fun generateHtmlContent(
 
                 tr.total-row td {
                     color: #0B4D16;
-                    border-top: 2px solid #0D631B;
+                    border-top: 1.8px solid #0D631B;
                     font-weight: 700;
-                    font-size: 12px;
-                    padding: 5.5px 7px;
+                    padding: 4.5px 6px;
                 }
 
                 /* ─── সিগনেচার সেকশন ─── */
                 .footer-signatures {
                     display: flex;
                     justify-content: space-between;
-                    padding: 0 30px;
-                    margin-top: 55px;
-                    margin-bottom: 6mm;
+                    padding: 0 24px;
+                    margin-bottom: 2mm;
                     page-break-inside: avoid;
+                    break-inside: avoid;
                 }
 
                 .sig-line {
-                    border-top: 1.5px solid #333333;
-                    width: 130px;
+                    border-top: 1.4px solid #333333;
+                    width: 125px;
                     text-align: center;
-                    padding-top: 6px;
-                    font-size: 12px;
+                    padding-top: 5px;
+                    font-size: 11.5px;
                     font-weight: 600;
                     color: #222222;
                 }

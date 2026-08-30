@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Agriculture
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudSync
@@ -94,6 +95,7 @@ fun SettingsScreen(
     onNavigateToAdmin: () -> Unit = {},
     onNavigateToRolePermissions: (String) -> Unit = {},
     onNavigateToShareholderSettings: () -> Unit = {},
+    onNavigateToStaffSettings: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToBackupRestore: () -> Unit = {},
     onOpenNotifications: () -> Unit = {},
@@ -648,6 +650,15 @@ fun SettingsScreen(
                             title = "শেয়ারহোল্ডার সেটিংস",
                             subtitle = "শেয়ারহোল্ডার তালিকা ও ব্যবস্থাপনা",
                             onClick = onNavigateToShareholderSettings
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsRowItem(
+                            icon = Icons.Default.Badge,
+                            title = "স্টাফ সেটিংস",
+                            subtitle = "স্টাফ তালিকা ও ব্যবস্থাপনা",
+                            onClick = onNavigateToStaffSettings
                         )
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))

@@ -60,7 +60,6 @@ function doPost(e) {
     if (configuredToken && configuredToken.trim() !== "") {
       var reqToken = extractBearerToken(e, payload);
       if (!reqToken || reqToken !== configuredToken) {
-        // Log failed authentication without exposing secrets
         logSecurityEvent("AUTH_FAILED", "Unauthorized backup request attempted");
         return createSecureResponse(false, "Unauthorized: Invalid or missing API Token", 0, 401);
       }
@@ -96,10 +95,7 @@ function doPost(e) {
     if (cache.get(rateLimitKey) !== null) {
       return createSecureResponse(false, "Rate limit exceeded. Please wait a few seconds before retrying.", 0, 429);
     }
-    // Set rate limit flag for 3 seconds
     try { cache.put(rateLimitKey, "1", RATE_LIMIT_SEC); } catch (cErr) {}
-
-    // Mark request_id as used in cache for 10 minutes
     try { cache.put(cacheKey, "PROCESSED", REQ_CACHE_TTL_SEC); } catch (cErr) {}
 
     // 7. Security: Schema & Data Structure Validation
@@ -118,37 +114,47 @@ function doPost(e) {
       processedCount++;
     }
 
-    // B. Sync Daily Reports (Upsert)
+    // B. Sync Daily Reports (Chronological Date Order)
     if (data.daily_reports && Array.isArray(data.daily_reports)) {
       processedCount += syncDailyReports(ss, data.daily_reports);
     }
 
-    // C. Sync Monthly Expenses (Upsert)
+    // C. Sync Monthly Expenses (Chronological Date Order)
     if (data.monthly_expenses && Array.isArray(data.monthly_expenses)) {
       processedCount += syncMonthlyExpenses(ss, data.monthly_expenses);
     }
 
-    // D. Sync Users (Upsert)
+    // D. Sync Users
     if (data.users && Array.isArray(data.users)) {
       processedCount += syncUsers(ss, data.users);
     }
 
-    // E. Sync Role Permissions (Upsert)
+    // E. Sync Role Permissions
     if (data.role_permissions && typeof data.role_permissions === 'object') {
       processedCount += syncRolePermissions(ss, data.role_permissions);
     }
 
-    // F. Sync Shareholders (Upsert)
+    // F. Sync Shareholders
     if (data.shareholders && Array.isArray(data.shareholders)) {
       processedCount += syncShareholders(ss, data.shareholders);
     }
 
-    // G. Sync Shareholder Payments (Upsert)
+    // G. Sync Shareholder Payments (Chronological Date Order)
     if (data.shareholder_payments && Array.isArray(data.shareholder_payments)) {
       processedCount += syncShareholderPayments(ss, data.shareholder_payments);
     }
 
-    // 9. Log Activity (Securely without logging tokens or personal payload)
+    // H. Sync Staff (স্টাফ তালিকা)
+    if (data.staff && Array.isArray(data.staff)) {
+      processedCount += syncStaff(ss, data.staff);
+    }
+
+    // I. Sync Staff Payments (স্টাফ পেমেন্ট - Chronological Date Order)
+    if (data.staff_payments && Array.isArray(data.staff_payments)) {
+      processedCount += syncStaffPayments(ss, data.staff_payments);
+    }
+
+    // 9. Log Activity
     logBackupActivity(ss, payload, processedCount, "SUCCESS", "ক্লাউড ব্যাকআপ সফল হয়েছে");
 
     return createSecureResponse(true, "ক্লাউড ব্যাকআপ সফল হয়েছে", processedCount, 200);
@@ -156,9 +162,8 @@ function doPost(e) {
   } catch (error) {
     try {
       var ssErr = SpreadsheetApp.getActiveSpreadsheet();
-      logBackupActivity(ssErr, payload || {}, 0, "ERROR", "Internal execution error");
+      logBackupActivity(ssErr, payload || {}, 0, "ERROR", "Internal execution error: " + error.message);
     } catch (logErr) {}
-    // Generic error message to prevent leaking internal stack trace details
     return createSecureResponse(false, "ব্যাকআপ সম্পন্ন হয়নি: সার্ভার অভ্যন্তরীণ ত্রুটি", 0, 500);
   } finally {
     lock.releaseLock();
@@ -187,7 +192,6 @@ function getSecretApiToken() {
 }
 
 function extractBearerToken(e, payload) {
-  // Check Authorization header (Authorization: Bearer <TOKEN>)
   if (e && e.headers) {
     var authHeader = e.headers["Authorization"] || e.headers["authorization"];
     if (authHeader && typeof authHeader === "string") {
@@ -198,7 +202,6 @@ function extractBearerToken(e, payload) {
       return authHeader.trim();
     }
   }
-  // Fallback to payload api_token
   if (payload && payload.api_token) {
     return String(payload.api_token).trim();
   }
@@ -224,13 +227,12 @@ function logSecurityEvent(eventType, message) {
 }
 
 // -------------------------------------------------------------
-// PRIVATE SHEET SYNC FUNCTIONS (UPSERT)
+// PRIVATE SHEET SYNC FUNCTIONS (DATE-WISE TOP TO BOTTOM ORDER)
 // -------------------------------------------------------------
 
 function syncFarmProfile(ss, profile) {
-  var sheet = getOrCreateSheet(ss, "Farm Profile (ফার্ম প্রোফাইল)", [
-    "Field (বিবরণ)", "Value (তথ্য)", "Last Updated (আপডেট সময়)"
-  ]);
+  var headers = ["Field (বিবরণ)", "Value (তথ্য)", "Last Updated (আপডেট সময়)"];
+  var sheet = getOrCreateSheet(ss, "Farm Profile (ফার্ম প্রোফাইল)", headers);
 
   var rows = [
     ["ফার্মের নাম (Farm Name)", sanitizeString(profile.farmName), new Date()],
@@ -244,8 +246,7 @@ function syncFarmProfile(ss, profile) {
     ["স্বয়ংক্রিয় ব্যাকআপ (Auto Backup)", profile.autoBackup ? "ON" : "OFF", new Date()]
   ];
 
-  sheet.getRange(2, 1, sheet.getLastRow() > 1 ? sheet.getLastRow() - 1 : 1, 3).clearContent();
-  sheet.getRange(2, 1, rows.length, 3).setValues(rows);
+  writeSheetDataClean(sheet, headers, rows);
 }
 
 function syncDailyReports(ss, reports) {
@@ -256,20 +257,27 @@ function syncDailyReports(ss, reports) {
     "সমন্বয়ের কারণ", "মন্তব্য (Remarks)", "Sync Timestamp"
   ];
   var sheet = getOrCreateSheet(ss, "Daily Reports (দৈনিক রিপোর্ট)", headers);
-  if (reports.length === 0) return 0;
+  if (!reports || reports.length === 0) return 0;
 
-  var idColIndex = 1;
-  var existingMap = getRowIndexMap(sheet, idColIndex);
-  var appendRows = [];
   var now = new Date();
+  var recordMap = {};
 
+  // 1. Load existing rows from sheet
+  var existingRows = readExistingDataRows(sheet, headers.length);
+  existingRows.forEach(function(row) {
+    var idStr = String(row[0] || "").trim();
+    if (idStr) recordMap[idStr] = row;
+  });
+
+  // 2. Merge incoming reports
   reports.forEach(function(r) {
     var idStr = String(r.id || r.date || "").trim();
     if (!idStr) return;
 
-    var rowValues = [
+    var dateStr = sanitizeString(r.date);
+    recordMap[idStr] = [
       idStr,
-      sanitizeString(r.date),
+      dateStr,
       Number(r.currentBirds) || 0,
       Number(r.deadBirds) || 0,
       Number(r.eggProduction) || 0,
@@ -285,18 +293,20 @@ function syncDailyReports(ss, reports) {
       sanitizeString(r.remarks),
       now
     ];
-
-    if (existingMap[idStr]) {
-      sheet.getRange(existingMap[idStr], 1, 1, rowValues.length).setValues([rowValues]);
-    } else {
-      appendRows.push(rowValues);
-    }
   });
 
-  if (appendRows.length > 0) {
-    sheet.getRange(sheet.getLastRow() + 1, 1, appendRows.length, appendRows[0].length).setValues(appendRows);
-  }
-  return reports.length;
+  // 3. Sort all records date-wise top to bottom (ascending: 01 -> 02 -> ... -> 28 -> 29 -> 31)
+  var allRows = Object.values(recordMap);
+  allRows.sort(function(a, b) {
+    var dateA = parseDateForSort(a[1]);
+    var dateB = parseDateForSort(b[1]);
+    if (dateA !== dateB) return dateA - dateB;
+    return String(a[0]).localeCompare(String(b[0]));
+  });
+
+  // 4. Clean batch write to sheet
+  writeSheetDataClean(sheet, headers, allRows);
+  return allRows.length;
 }
 
 function syncMonthlyExpenses(ss, expenses) {
@@ -307,20 +317,27 @@ function syncMonthlyExpenses(ss, expenses) {
     "Sync Timestamp"
   ];
   var sheet = getOrCreateSheet(ss, "Monthly Expenses (মাসিক খরচ)", headers);
-  if (expenses.length === 0) return 0;
+  if (!expenses || expenses.length === 0) return 0;
 
-  var idColIndex = 1;
-  var existingMap = getRowIndexMap(sheet, idColIndex);
-  var appendRows = [];
   var now = new Date();
+  var recordMap = {};
 
+  // 1. Load existing rows
+  var existingRows = readExistingDataRows(sheet, headers.length);
+  existingRows.forEach(function(row) {
+    var idStr = String(row[0] || "").trim();
+    if (idStr) recordMap[idStr] = row;
+  });
+
+  // 2. Merge incoming expenses
   expenses.forEach(function(e) {
     var idStr = String(e.id || e.date || "").trim();
     if (!idStr) return;
 
-    var rowValues = [
+    var dateStr = sanitizeString(e.date);
+    recordMap[idStr] = [
       idStr,
-      sanitizeString(e.date),
+      dateStr,
       Number(e.feedCost) || 0,
       Number(e.medicineCost) || 0,
       Number(e.staffMarket) || 0,
@@ -333,18 +350,20 @@ function syncMonthlyExpenses(ss, expenses) {
       sanitizeString(e.remarks),
       now
     ];
-
-    if (existingMap[idStr]) {
-      sheet.getRange(existingMap[idStr], 1, 1, rowValues.length).setValues([rowValues]);
-    } else {
-      appendRows.push(rowValues);
-    }
   });
 
-  if (appendRows.length > 0) {
-    sheet.getRange(sheet.getLastRow() + 1, 1, appendRows.length, appendRows[0].length).setValues(appendRows);
-  }
-  return expenses.length;
+  // 3. Sort date-wise top to bottom (ascending)
+  var allRows = Object.values(recordMap);
+  allRows.sort(function(a, b) {
+    var dateA = parseDateForSort(a[1]);
+    var dateB = parseDateForSort(b[1]);
+    if (dateA !== dateB) return dateA - dateB;
+    return String(a[0]).localeCompare(String(b[0]));
+  });
+
+  // 4. Clean batch write
+  writeSheetDataClean(sheet, headers, allRows);
+  return allRows.length;
 }
 
 function syncUsers(ss, users) {
@@ -353,19 +372,23 @@ function syncUsers(ss, users) {
     "রোল (Role)", "অনুমোদিত (Approved)", "রেজিস্ট্রেশন তারিখ", "Sync Timestamp"
   ];
   var sheet = getOrCreateSheet(ss, "Users (ইউজার তালিকা)", headers);
-  if (users.length === 0) return 0;
+  if (!users || users.length === 0) return 0;
 
-  var idColIndex = 1;
-  var existingMap = getRowIndexMap(sheet, idColIndex);
-  var appendRows = [];
   var now = new Date();
+  var recordMap = {};
+
+  var existingRows = readExistingDataRows(sheet, headers.length);
+  existingRows.forEach(function(row) {
+    var idStr = String(row[0] || "").trim();
+    if (idStr) recordMap[idStr] = row;
+  });
 
   users.forEach(function(u) {
     var idStr = String(u.id || u.email || "").trim();
     if (!idStr) return;
 
     var regDateStr = u.registeredDate ? new Date(u.registeredDate).toLocaleString() : "";
-    var rowValues = [
+    recordMap[idStr] = [
       idStr,
       sanitizeString(u.username),
       sanitizeString(u.email),
@@ -375,18 +398,11 @@ function syncUsers(ss, users) {
       regDateStr,
       now
     ];
-
-    if (existingMap[idStr]) {
-      sheet.getRange(existingMap[idStr], 1, 1, rowValues.length).setValues([rowValues]);
-    } else {
-      appendRows.push(rowValues);
-    }
   });
 
-  if (appendRows.length > 0) {
-    sheet.getRange(sheet.getLastRow() + 1, 1, appendRows.length, appendRows[0].length).setValues(appendRows);
-  }
-  return users.length;
+  var allRows = Object.values(recordMap);
+  writeSheetDataClean(sheet, headers, allRows);
+  return allRows.length;
 }
 
 function syncRolePermissions(ss, rolePermsMap) {
@@ -395,20 +411,24 @@ function syncRolePermissions(ss, rolePermsMap) {
     "Expense View", "Expense Add", "Expense Delete", "Report View", "Report Download", "Sync Timestamp"
   ];
   var sheet = getOrCreateSheet(ss, "Role Permissions (রোল পারমিশন)", headers);
-  var keys = Object.keys(rolePermsMap);
+  var keys = Object.keys(rolePermsMap || {});
   if (keys.length === 0) return 0;
 
-  var idColIndex = 1;
-  var existingMap = getRowIndexMap(sheet, idColIndex);
-  var appendRows = [];
   var now = new Date();
+  var recordMap = {};
+
+  var existingRows = readExistingDataRows(sheet, headers.length);
+  existingRows.forEach(function(row) {
+    var idStr = String(row[0] || "").trim();
+    if (idStr) recordMap[idStr] = row;
+  });
 
   keys.forEach(function(k) {
     var p = rolePermsMap[k];
     var idStr = String(p.roleKey || k).toUpperCase().trim();
     if (!idStr) return;
 
-    var rowValues = [
+    recordMap[idStr] = [
       idStr,
       sanitizeString(p.roleDisplayName || idStr),
       p.dailyReportView ? "TRUE" : "FALSE",
@@ -421,51 +441,48 @@ function syncRolePermissions(ss, rolePermsMap) {
       p.reportAnalyticsDownload ? "TRUE" : "FALSE",
       now
     ];
-
-    if (existingMap[idStr]) {
-      sheet.getRange(existingMap[idStr], 1, 1, rowValues.length).setValues([rowValues]);
-    } else {
-      appendRows.push(rowValues);
-    }
   });
 
-  if (appendRows.length > 0) {
-    sheet.getRange(sheet.getLastRow() + 1, 1, appendRows.length, appendRows[0].length).setValues(appendRows);
-  }
-  return keys.length;
+  var allRows = Object.values(recordMap);
+  writeSheetDataClean(sheet, headers, allRows);
+  return allRows.length;
 }
 
 function syncShareholders(ss, list) {
   if (!list || list.length === 0) return 0;
   var headers = ["Shareholder ID (আইডি)", "Shareholder Name (নাম)", "Created Date", "Last Synced"];
   var sheet = getOrCreateSheet(ss, "Shareholders (শেয়ারহোল্ডার)", headers);
-  var existingMap = getRowIndexMap(sheet, 1);
   var now = new Date();
-  var appendRows = [];
+  var recordMap = {};
+
+  var existingRows = readExistingDataRows(sheet, headers.length);
+  existingRows.forEach(function(row) {
+    var idStr = String(row[0] || "").trim();
+    if (idStr) recordMap[idStr] = row;
+  });
 
   list.forEach(function(s) {
     var idStr = String(s.id || "").trim();
     if (!idStr) return;
 
     var createdDate = s.createdAt ? new Date(Number(s.createdAt)) : now;
-    var rowValues = [
+    recordMap[idStr] = [
       idStr,
       sanitizeString(s.name || ""),
       createdDate,
       now
     ];
-
-    if (existingMap[idStr]) {
-      sheet.getRange(existingMap[idStr], 1, 1, rowValues.length).setValues([rowValues]);
-    } else {
-      appendRows.push(rowValues);
-    }
   });
 
-  if (appendRows.length > 0) {
-    sheet.getRange(sheet.getLastRow() + 1, 1, appendRows.length, appendRows[0].length).setValues(appendRows);
-  }
-  return list.length;
+  var allRows = Object.values(recordMap);
+  allRows.sort(function(a, b) {
+    var tA = new Date(a[2]).getTime() || 0;
+    var tB = new Date(b[2]).getTime() || 0;
+    return tA - tB;
+  });
+
+  writeSheetDataClean(sheet, headers, allRows);
+  return allRows.length;
 }
 
 function syncShareholderPayments(ss, list) {
@@ -476,16 +493,21 @@ function syncShareholderPayments(ss, list) {
     "Note (মন্তব্য)", "Created Date", "Last Synced"
   ];
   var sheet = getOrCreateSheet(ss, "Shareholder Payments (পেমেন্ট)", headers);
-  var existingMap = getRowIndexMap(sheet, 1);
   var now = new Date();
-  var appendRows = [];
+  var recordMap = {};
+
+  var existingRows = readExistingDataRows(sheet, headers.length);
+  existingRows.forEach(function(row) {
+    var idStr = String(row[0] || "").trim();
+    if (idStr) recordMap[idStr] = row;
+  });
 
   list.forEach(function(p) {
     var idStr = String(p.id || "").trim();
     if (!idStr) return;
 
     var createdDate = p.createdAt ? new Date(Number(p.createdAt)) : now;
-    var rowValues = [
+    recordMap[idStr] = [
       idStr,
       sanitizeString(p.shareholderId || ""),
       sanitizeString(p.shareholderName || ""),
@@ -496,18 +518,103 @@ function syncShareholderPayments(ss, list) {
       createdDate,
       now
     ];
-
-    if (existingMap[idStr]) {
-      sheet.getRange(existingMap[idStr], 1, 1, rowValues.length).setValues([rowValues]);
-    } else {
-      appendRows.push(rowValues);
-    }
   });
 
-  if (appendRows.length > 0) {
-    sheet.getRange(sheet.getLastRow() + 1, 1, appendRows.length, appendRows[0].length).setValues(appendRows);
-  }
-  return list.length;
+  var allRows = Object.values(recordMap);
+  allRows.sort(function(a, b) {
+    var dateA = parseDateForSort(a[3]);
+    var dateB = parseDateForSort(b[3]);
+    if (dateA !== dateB) return dateA - dateB;
+    return String(a[0]).localeCompare(String(b[0]));
+  });
+
+  writeSheetDataClean(sheet, headers, allRows);
+  return allRows.length;
+}
+
+function syncStaff(ss, list) {
+  if (!list || list.length === 0) return 0;
+  var headers = ["Staff ID (আইডি)", "Staff Name (নাম)", "Mobile (মোবাইল)", "Created Date", "Last Synced"];
+  var sheet = getOrCreateSheet(ss, "Staff (স্টাফ তালিকা)", headers);
+  var now = new Date();
+  var recordMap = {};
+
+  var existingRows = readExistingDataRows(sheet, headers.length);
+  existingRows.forEach(function(row) {
+    var idStr = String(row[0] || "").trim();
+    if (idStr) recordMap[idStr] = row;
+  });
+
+  list.forEach(function(s) {
+    var idStr = String(s.id || "").trim();
+    if (!idStr) return;
+
+    var createdDate = s.createdAt ? new Date(Number(s.createdAt)) : now;
+    recordMap[idStr] = [
+      idStr,
+      sanitizeString(s.name || ""),
+      sanitizeString(s.phone || ""),
+      createdDate,
+      now
+    ];
+  });
+
+  var allRows = Object.values(recordMap);
+  allRows.sort(function(a, b) {
+    var tA = new Date(a[3]).getTime() || 0;
+    var tB = new Date(b[3]).getTime() || 0;
+    return tA - tB;
+  });
+
+  writeSheetDataClean(sheet, headers, allRows);
+  return allRows.length;
+}
+
+function syncStaffPayments(ss, list) {
+  if (!list || list.length === 0) return 0;
+  var headers = [
+    "Payment ID (আইডি)", "Staff ID", "Staff Name (নাম)",
+    "Date (তারিখ)", "Amount (টাকার পরিমাণ ৳)", "Payment Method (মাধ্যম)",
+    "Note (মন্তব্য)", "Created Date", "Last Synced"
+  ];
+  var sheet = getOrCreateSheet(ss, "Staff Payments (স্টাফ পেমেন্ট)", headers);
+  var now = new Date();
+  var recordMap = {};
+
+  var existingRows = readExistingDataRows(sheet, headers.length);
+  existingRows.forEach(function(row) {
+    var idStr = String(row[0] || "").trim();
+    if (idStr) recordMap[idStr] = row;
+  });
+
+  list.forEach(function(p) {
+    var idStr = String(p.id || "").trim();
+    if (!idStr) return;
+
+    var createdDate = p.createdAt ? new Date(Number(p.createdAt)) : now;
+    recordMap[idStr] = [
+      idStr,
+      sanitizeString(p.staffId || ""),
+      sanitizeString(p.staffName || ""),
+      sanitizeString(p.date || ""),
+      Number(p.amount) || 0,
+      sanitizeString(p.paymentMethod || "Cash"),
+      sanitizeString(p.note || ""),
+      createdDate,
+      now
+    ];
+  });
+
+  var allRows = Object.values(recordMap);
+  allRows.sort(function(a, b) {
+    var dateA = parseDateForSort(a[3]);
+    var dateB = parseDateForSort(b[3]);
+    if (dateA !== dateB) return dateA - dateB;
+    return String(a[0]).localeCompare(String(b[0]));
+  });
+
+  writeSheetDataClean(sheet, headers, allRows);
+  return allRows.length;
 }
 
 function logBackupActivity(ss, payload, recordCount, status, message) {
@@ -549,19 +656,51 @@ function getOrCreateSheet(ss, sheetName, headers) {
   return sheet;
 }
 
-function getRowIndexMap(sheet, idColIndex) {
-  var map = {};
+function readExistingDataRows(sheet, colCount) {
   var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return map;
+  if (lastRow <= 1) return [];
+  return sheet.getRange(2, 1, lastRow - 1, colCount).getValues();
+}
 
-  var ids = sheet.getRange(2, idColIndex, lastRow - 1, 1).getValues();
-  for (var i = 0; i < ids.length; i++) {
-    var val = String(ids[i][0]).trim();
-    if (val !== "") {
-      map[val] = i + 2;
+function writeSheetDataClean(sheet, headers, rows) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, headers.length).clearContent();
+  }
+  if (rows && rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  }
+}
+
+function parseDateForSort(dateStr) {
+  if (!dateStr) return 0;
+  dateStr = String(dateStr).trim();
+  // Check YYYY-MM-DD or YYYY-M-D
+  if (dateStr.indexOf('-') !== -1) {
+    var parts = dateStr.split('-');
+    if (parts.length === 3) {
+      var y = parseInt(parts[0], 10);
+      var m = parseInt(parts[1], 10) - 1;
+      var d = parseInt(parts[2], 10);
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+        return new Date(y, m, d).getTime();
+      }
     }
   }
-  return map;
+  // Check DD/MM/YYYY or D/M/YYYY
+  if (dateStr.indexOf('/') !== -1) {
+    var parts = dateStr.split('/');
+    if (parts.length === 3) {
+      var d = parseInt(parts[0], 10);
+      var m = parseInt(parts[1], 10) - 1;
+      var y = parseInt(parts[2], 10);
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+        return new Date(y, m, d).getTime();
+      }
+    }
+  }
+  var parsed = new Date(dateStr).getTime();
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 function sanitizeString(val) {

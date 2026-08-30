@@ -21,6 +21,8 @@ import com.example.data.local.FarmProfileEntity
 import com.example.data.local.MonthlyExpenseEntity
 import com.example.data.local.ShareholderEntity
 import com.example.data.local.ShareholderPaymentEntity
+import com.example.data.local.StaffEntity
+import com.example.data.local.StaffPaymentEntity
 import com.example.data.local.UserEntity
 import com.example.data.repository.PoultryRepository
 import com.example.data.update.AppUpdateInfo
@@ -46,9 +48,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class PoultryViewModel(application: Application) : AndroidViewModel(application) {
-
+class PoultryViewModel(
+    application: Application,
     private val repository: PoultryRepository = PoultryRepository(application)
+) : AndroidViewModel(application) {
+
     val sheetsBackupManager: GoogleSheetsBackupManager = GoogleSheetsBackupManager(application)
     val appUpdateManager: AppUpdateManager = AppUpdateManager(application)
 
@@ -63,6 +67,8 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
     val rolePermissions: StateFlow<Map<String, com.example.data.local.RolePermissionConfig>>
     val shareholders: StateFlow<List<ShareholderEntity>>
     val shareholderPayments: StateFlow<List<ShareholderPaymentEntity>>
+    val staff: StateFlow<List<StaffEntity>>
+    val staffPayments: StateFlow<List<StaffPaymentEntity>>
     val dashboardStats: StateFlow<DashboardStats>
     val stockLedger: StateFlow<Map<String, DailyStockRecord>>
     val syncStatus = MutableStateFlow("ফায়ারবেস ক্লাউড সিঙ্ক সফল")
@@ -162,6 +168,18 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
         )
 
         shareholderPayments = repository.allShareholderPayments.stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            emptyList()
+        )
+
+        staff = repository.allStaff.stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            emptyList()
+        )
+
+        staffPayments = repository.allStaffPayments.stateIn(
             viewModelScope,
             SharingStarted.Eagerly,
             emptyList()
@@ -809,6 +827,8 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
                 rolePermissions = rolePermissions.value,
                 shareholders = shareholders.value,
                 shareholderPayments = shareholderPayments.value,
+                staff = staff.value,
+                staffPayments = staffPayments.value,
                 userId = user?.id ?: "",
                 userEmail = user?.email ?: ""
             )
@@ -1022,6 +1042,125 @@ class PoultryViewModel(application: Application) : AndroidViewModel(application)
                 id = id,
                 onSuccess = {
                     SnackbarController.showMessage("পেমেন্ট সফলভাবে মুছে ফেলা হয়েছে")
+                    onSuccess()
+                },
+                onError = { err ->
+                    SnackbarController.showError(err)
+                    onError(err)
+                }
+            )
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Staff Management (Admin only)
+    // ══════════════════════════════════════════════════════════════════════
+
+    fun addStaff(name: String, phone: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            repository.addStaff(
+                name = name,
+                phone = phone,
+                onSuccess = {
+                    SnackbarController.showMessage("স্টাফ সফলভাবে যোগ করা হয়েছে")
+                    onSuccess()
+                },
+                onError = { err ->
+                    SnackbarController.showError(err)
+                    onError(err)
+                }
+            )
+        }
+    }
+
+    fun updateStaff(id: String, name: String, phone: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            repository.updateStaff(
+                id = id,
+                name = name,
+                phone = phone,
+                onSuccess = {
+                    SnackbarController.showMessage("স্টাফের তথ্য সফলভাবে পরিবর্তন করা হয়েছে")
+                    onSuccess()
+                },
+                onError = { err ->
+                    SnackbarController.showError(err)
+                    onError(err)
+                }
+            )
+        }
+    }
+
+    fun deleteStaff(id: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            repository.deleteStaff(
+                id = id,
+                onSuccess = {
+                    SnackbarController.showMessage("স্টাফ মুছে ফেলা হয়েছে")
+                    onSuccess()
+                },
+                onError = { err ->
+                    SnackbarController.showError(err)
+                    onError(err)
+                }
+            )
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Staff Payment Management
+    // ══════════════════════════════════════════════════════════════════════
+
+    fun addStaffPayment(
+        payment: StaffPaymentEntity,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            repository.addStaffPayment(
+                payment = payment,
+                onSuccess = {
+                    SnackbarController.showMessage("স্টাফ পেমেন্ট সফলভাবে সংরক্ষণ করা হয়েছে")
+                    onSuccess()
+                },
+                onError = { err ->
+                    SnackbarController.showError(err)
+                    onError(err)
+                }
+            )
+        }
+    }
+
+    fun updateStaffPayment(
+        payment: StaffPaymentEntity,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            repository.updateStaffPayment(
+                payment = payment,
+                onSuccess = {
+                    SnackbarController.showMessage("স্টাফ পেমেন্ট সফলভাবে পরিবর্তন করা হয়েছে")
+                    onSuccess()
+                },
+                onError = { err ->
+                    SnackbarController.showError(err)
+                    onError(err)
+                }
+            )
+        }
+    }
+
+    fun deleteStaffPayment(
+        id: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            repository.deleteStaffPayment(
+                id = id,
+                onSuccess = {
+                    SnackbarController.showMessage("স্টাফ পেমেন্ট সফলভাবে মুছে ফেলা হয়েছে")
                     onSuccess()
                 },
                 onError = { err ->

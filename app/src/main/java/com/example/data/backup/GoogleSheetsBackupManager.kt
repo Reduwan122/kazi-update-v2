@@ -127,6 +127,8 @@ class GoogleSheetsBackupManager(private val context: Context) {
         rolePermissions: Map<String, RolePermissionConfig>,
         shareholders: List<ShareholderEntity> = emptyList(),
         shareholderPayments: List<ShareholderPaymentEntity> = emptyList(),
+        staff: List<com.example.data.local.StaffEntity> = emptyList(),
+        staffPayments: List<com.example.data.local.StaffPaymentEntity> = emptyList(),
         userId: String = "",
         userEmail: String = ""
     ): Result<SheetsBackupResponse> = withContext(Dispatchers.IO) {
@@ -156,6 +158,14 @@ class GoogleSheetsBackupManager(private val context: Context) {
             val requestId = java.util.UUID.randomUUID().toString()
             val token = getApiToken()
 
+            val sortedDailyReports = dailyReports.sortedWith(compareBy { parseDateToTime(it.date) })
+            val sortedMonthlyExpenses = monthlyExpenses.sortedWith(compareBy { parseDateToTime(it.date) })
+            val sortedShareholderPayments = shareholderPayments.sortedWith(compareBy { parseDateToTime(it.date) })
+            val sortedStaffPayments = staffPayments.sortedWith(compareBy { parseDateToTime(it.date) })
+            val sortedShareholders = shareholders.sortedWith(compareBy { it.createdAt })
+            val sortedStaff = staff.sortedWith(compareBy { it.createdAt })
+            val sortedUsers = users.sortedWith(compareBy { it.registeredDate })
+
             val payload = SheetsBackupPayload(
                 backupSchemaVersion = 1,
                 appVersion = "1.0.0",
@@ -168,12 +178,14 @@ class GoogleSheetsBackupManager(private val context: Context) {
                 apiToken = token,
                 data = SheetsBackupData(
                     farmProfile = farmProfile,
-                    dailyReports = dailyReports,
-                    monthlyExpenses = monthlyExpenses,
-                    users = users,
+                    dailyReports = sortedDailyReports,
+                    monthlyExpenses = sortedMonthlyExpenses,
+                    users = sortedUsers,
                     rolePermissions = rolePermissions,
-                    shareholders = shareholders,
-                    shareholderPayments = shareholderPayments
+                    shareholders = sortedShareholders,
+                    shareholderPayments = sortedShareholderPayments,
+                    staff = sortedStaff,
+                    staffPayments = sortedStaffPayments
                 )
             )
 
@@ -278,6 +290,35 @@ class GoogleSheetsBackupManager(private val context: Context) {
             }
         }
         return sb.toString()
+    }
+
+    private fun parseDateToTime(dateStr: String): Long {
+        if (dateStr.isBlank()) return 0L
+        return try {
+            if (dateStr.contains("-")) {
+                val parts = dateStr.split("-")
+                if (parts.size == 3) {
+                    val y = parts[0].toIntOrNull() ?: 0
+                    val m = parts[1].toIntOrNull() ?: 0
+                    val d = parts[2].toIntOrNull() ?: 0
+                    val cal = java.util.Calendar.getInstance()
+                    cal.set(y, m - 1, d, 0, 0, 0)
+                    cal.timeInMillis
+                } else 0L
+            } else if (dateStr.contains("/")) {
+                val parts = dateStr.split("/")
+                if (parts.size == 3) {
+                    val d = parts[0].toIntOrNull() ?: 0
+                    val m = parts[1].toIntOrNull() ?: 0
+                    val y = parts[2].toIntOrNull() ?: 0
+                    val cal = java.util.Calendar.getInstance()
+                    cal.set(y, m - 1, d, 0, 0, 0)
+                    cal.timeInMillis
+                } else 0L
+            } else 0L
+        } catch (e: Exception) {
+            0L
+        }
     }
 }
 
