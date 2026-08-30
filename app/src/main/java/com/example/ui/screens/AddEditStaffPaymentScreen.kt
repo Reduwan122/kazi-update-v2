@@ -23,12 +23,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.Payments
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -38,7 +39,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -53,17 +56,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.StaffEntity
 import com.example.data.local.StaffPaymentEntity
+import com.example.ui.components.AccessDeniedView
 import com.example.ui.components.BanglaNumberFormatter
 import com.example.ui.components.MainTopAppBar
 import com.example.ui.components.SnackbarController
@@ -132,7 +134,7 @@ fun AddEditStaffPaymentScreen(
     var dropdownExpanded by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // DatePicker
+    // DatePicker Dialog
     val calendar = Calendar.getInstance()
     val datePickerDialog = DatePickerDialog(
         context,
@@ -158,55 +160,21 @@ fun AddEditStaffPaymentScreen(
                 )
             }
         ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Text(
-                            text = "অননুমোদিত প্রবেশাধিকার",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "শুধুমাত্র এডমিন স্টাফ পেমেন্ট যোগ ও সম্পাদন করতে পারেন।",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = onBack, shape = RoundedCornerShape(8.dp)) {
-                            Text("ফিরে যান")
-                        }
-                    }
-                }
-            }
+            AccessDeniedView(
+                title = "পেমেন্ট ব্যবস্থাপনা সংরক্ষিত",
+                message = "শুধুমাত্র এডমিন স্টাফ পেমেন্ট যোগ ও সম্পাদন করতে পারেন।",
+                modifier = Modifier.padding(innerPadding)
+            )
         }
         return
     }
 
+    val liveAmount = amountText.toDoubleOrNull() ?: 0.0
+
     Scaffold(
         topBar = {
             MainTopAppBar(
-                title = if (isEditing) "স্টাফ পেমেন্ট পরিবর্তন করুন" else "স্টাফ পেমেন্ট যোগ করুন",
+                title = if (isEditing) "স্টাফ পেমেন্ট সম্পাদন" else "স্টাফ পেমেন্ট এন্ট্রি",
                 isRootScreen = false,
                 onBackClick = onBack
             )
@@ -215,410 +183,438 @@ fun AddEditStaffPaymentScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(innerPadding)
                 .imePadding()
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
                 .testTag("add_edit_staff_payment_screen"),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Form Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    // 1. Staff Selection Field
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "স্টাফের নাম",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+            Spacer(modifier = Modifier.height(4.dp))
 
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            OutlinedTextField(
-                                value = selectedStaff?.name ?: (existingPayment?.staffName ?: ""),
-                                onValueChange = {},
-                                readOnly = true,
-                                placeholder = { Text("স্টাফ নির্বাচন করুন") },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                },
-                                trailingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowDropDown,
-                                        contentDescription = "Select Staff",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { dropdownExpanded = true }
-                                    .testTag("input_select_staff"),
-                                enabled = false,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                    disabledLeadingIconColor = MaterialTheme.colorScheme.primary,
-                                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+            // 1. Staff Selection
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "স্টাফের নাম",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+
+                if (staffList.isEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp)
                                 )
-                            )
-
-                            // Invisible full clickable overlay
-                            Box(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { dropdownExpanded = true }
-                            )
-
-                            DropdownMenu(
-                                expanded = dropdownExpanded,
-                                onDismissRequest = { dropdownExpanded = false },
-                                modifier = Modifier.fillMaxWidth(0.85f)
-                            ) {
-                                if (staffList.isEmpty()) {
-                                    DropdownMenuItem(
-                                        text = { Text("কোনো স্টাফ নেই। সেটিংস থেকে যোগ করুন") },
-                                        onClick = {
-                                            dropdownExpanded = false
-                                            onNavigateToStaffSettings()
-                                        }
-                                    )
-                                } else {
-                                    staffList.forEach { staff ->
-                                        DropdownMenuItem(
-                                            text = {
-                                                Column {
-                                                    Text(
-                                                        text = staff.name,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        color = MaterialTheme.colorScheme.onSurface
-                                                    )
-                                                    if (staff.phone.isNotBlank()) {
-                                                        Text(
-                                                            text = BanglaNumberFormatter.toBanglaDigits(staff.phone),
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
-                                                    }
-                                                }
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    imageVector = Icons.Default.Person,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            },
-                                            onClick = {
-                                                selectedStaff = staff
-                                                dropdownExpanded = false
-                                                errorMessage = null
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        if (staffList.isEmpty()) {
-                            TextButton(
-                                onClick = onNavigateToStaffSettings,
-                                modifier = Modifier.align(Alignment.End)
-                            ) {
                                 Text(
-                                    text = "+ নতুন স্টাফ যোগ করুন",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary
+                                    text = "কোনো স্টাফ যুক্ত নেই। সেটিংস থেকে যোগ করুন।",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error
                                 )
+                            }
+                            TextButton(onClick = onNavigateToStaffSettings) {
+                                Text("সেটিংস", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
-
-                    // 2. Date Selection
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "তারিখ",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            OutlinedTextField(
-                                value = BanglaNumberFormatter.formatBanglaDate(selectedDate),
-                                onValueChange = {},
-                                readOnly = true,
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.CalendarToday,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag("input_staff_payment_date"),
-                                enabled = false,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                    disabledLeadingIconColor = MaterialTheme.colorScheme.primary
-                                )
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { datePickerDialog.show() }
-                            )
-                        }
-                    }
-
-                    // 3. Amount Field
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "কত টাকা দেওয়া হয়েছে",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
+                } else {
+                    Box(modifier = Modifier.fillMaxWidth()) {
                         OutlinedTextField(
-                            value = amountText,
-                            onValueChange = {
-                                val banglaConverted = BanglaNumberFormatter.convertBanglaToEnglishDigits(it)
-                                if (banglaConverted.matches(Regex("^\\d*\\.?\\d*$"))) {
-                                    amountText = banglaConverted
-                                    errorMessage = null
-                                }
-                            },
-                            placeholder = { Text("৳ Amount (যেমন: ২০০০০)") },
+                            value = selectedStaff?.name ?: "",
+                            onValueChange = {},
+                            readOnly = true,
+                            placeholder = { Text("স্টাফ নির্বাচন করুন") },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.Default.Payments,
+                                    imageVector = Icons.Default.Badge,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
+                            trailingIcon = {
+                                IconButton(onClick = { dropdownExpanded = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = "Dropdown",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .testTag("input_staff_payment_amount")
-                        )
-                    }
-
-                    // 4. Payment Method Chips
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = "পেমেন্ট মাধ্যম",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                .clickable { dropdownExpanded = true }
+                                .testTag("dropdown_staff_select"),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
                         )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        DropdownMenu(
+                            expanded = dropdownExpanded,
+                            onDismissRequest = { dropdownExpanded = false },
+                            modifier = Modifier.fillMaxWidth(0.85f)
                         ) {
-                            PaymentMethodChip(
-                                label = "Cash",
-                                icon = Icons.Default.Wallet,
-                                isSelected = selectedMethod == "Cash",
-                                onClick = { selectedMethod = "Cash" },
-                                modifier = Modifier.weight(1f)
-                            )
-                            PaymentMethodChip(
-                                label = "Bank",
-                                icon = Icons.Default.AccountBalance,
-                                isSelected = selectedMethod == "Bank",
-                                onClick = { selectedMethod = "Bank" },
-                                modifier = Modifier.weight(1f)
-                            )
-                            PaymentMethodChip(
-                                label = "bKash",
-                                icon = Icons.Default.PhoneAndroid,
-                                isSelected = selectedMethod == "bKash",
-                                onClick = { selectedMethod = "bKash" },
-                                modifier = Modifier.weight(1f)
-                            )
-                            PaymentMethodChip(
-                                label = "Other",
-                                icon = Icons.Default.Payments,
-                                isSelected = selectedMethod == "Other",
-                                onClick = { selectedMethod = "Other" },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-
-                    // 5. Note Field (Optional)
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "নোট (ঐচ্ছিক)",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        OutlinedTextField(
-                            value = noteText,
-                            onValueChange = { noteText = it },
-                            placeholder = { Text("পেমেন্ট সংক্রান্ত কোনো বিবরণ থাকলে লিখুন") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(90.dp)
-                                .testTag("input_staff_payment_note"),
-                            maxLines = 3
-                        )
-                    }
-
-                    // Error Message display
-                    errorMessage?.let { err ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Warning,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = err,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
+                            staffList.forEach { staff ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = if (staff.designation.isNotBlank()) "${staff.name} (${staff.designation})" else staff.name,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontWeight = if (selectedStaff?.id == staff.id) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                        )
+                                    },
+                                    onClick = {
+                                        selectedStaff = staff
+                                        dropdownExpanded = false
+                                        errorMessage = null
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            // Save Button
-            Button(
-                onClick = {
-                    haptics.tap()
-
-                    val finalStaff = selectedStaff ?: (
-                        if (existingPayment != null) StaffEntity(id = existingPayment.staffId, name = existingPayment.staffName)
-                        else null
-                    )
-
-                    if (finalStaff == null || finalStaff.name.isBlank()) {
-                        errorMessage = "স্টাফের নাম নির্বাচন করুন"
-                        SnackbarController.showError("স্টাফের নাম নির্বাচন করুন")
-                        return@Button
-                    }
-
-                    val amount = amountText.toDoubleOrNull() ?: 0.0
-                    if (amount <= 0.0) {
-                        errorMessage = "সঠিক টাকার পরিমাণ দিন"
-                        SnackbarController.showError("সঠিক টাকার পরিমাণ দিন")
-                        return@Button
-                    }
-
-                    isSaving = true
-                    val paymentToSave = StaffPaymentEntity(
-                        id = existingPayment?.id ?: "",
-                        staffId = finalStaff.id,
-                        staffName = finalStaff.name,
-                        date = selectedDate,
-                        amount = amount,
-                        paymentMethod = selectedMethod,
-                        note = noteText.trim(),
-                        createdAt = existingPayment?.createdAt ?: System.currentTimeMillis(),
-                        updatedAt = System.currentTimeMillis()
-                    )
-
-                    if (isEditing) {
-                        viewModel.updateStaffPayment(
-                            payment = paymentToSave,
-                            onSuccess = {
-                                isSaving = false
-                                SnackbarController.showMessage("স্টাফ পেমেন্ট সফলভাবে পরিবর্তন করা হয়েছে")
-                                onBack()
-                            },
-                            onError = { err ->
-                                isSaving = false
-                                errorMessage = err
-                                SnackbarController.showError(err)
-                            }
-                        )
-                    } else {
-                        viewModel.addStaffPayment(
-                            payment = paymentToSave,
-                            onSuccess = {
-                                isSaving = false
-                                SnackbarController.showMessage("স্টাফ পেমেন্ট সফলভাবে সংরক্ষণ করা হয়েছে")
-                                onBack()
-                            },
-                            onError = { err ->
-                                isSaving = false
-                                errorMessage = err
-                                SnackbarController.showError(err)
-                            }
-                        )
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .testTag("btn_save_staff_payment"),
-                shape = RoundedCornerShape(12.dp),
-                enabled = !isSaving,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Save,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+            // 2. Date Picker Field
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = if (isSaving) "সংরক্ষণ হচ্ছে..." else "পেমেন্ট সংরক্ষণ করুন",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+                    text = "তারিখ",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+                OutlinedTextField(
+                    value = "${BanglaNumberFormatter.formatBanglaDate(selectedDate)} ($selectedDate)",
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = {
+                        IconButton(onClick = { datePickerDialog.show() }) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarMonth,
+                                contentDescription = "Select Date",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { datePickerDialog.show() }
+                        .testTag("field_date"),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
                 )
             }
+
+            // 3. Amount Field
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "কত টাকা দেওয়া হয়েছে",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { input ->
+                        val cleaned = BanglaNumberFormatter.toEnglishDigits(input)
+                        if (cleaned.isEmpty() || cleaned.matches(Regex("^\\d*\\.?\\d*$"))) {
+                            amountText = cleaned
+                            errorMessage = null
+                        }
+                    },
+                    placeholder = { Text("০.০০") },
+                    leadingIcon = {
+                        Text(
+                            text = "৳",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            ),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("input_staff_payment_amount"),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+            }
+
+            // 4. Live Amount Summary Card
+            if (liveAmount > 0) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Paid,
+                                contentDescription = "Total Amount",
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "পরিশোধিত অর্থ (টাকা)",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            )
+                        }
+
+                        Text(
+                            text = BanglaNumberFormatter.formatCurrency(liveAmount),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontSize = 18.sp
+                            )
+                        )
+                    }
+                }
+            }
+
+            // 5. Payment Method Selection
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "পেমেন্ট মাধ্যম",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+
+                val methods = listOf(
+                    StaffPaymentMethodItem("Cash", "ক্যাশ", Icons.Default.Payments),
+                    StaffPaymentMethodItem("Bank", "ব্যাংক", Icons.Default.AccountBalance),
+                    StaffPaymentMethodItem("bKash", "বিকাশ", Icons.Default.PhoneAndroid),
+                    StaffPaymentMethodItem("Other", "অন্যান্য", Icons.Default.Wallet)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    methods.forEach { item ->
+                        StaffPaymentMethodChip(
+                            item = item,
+                            isSelected = selectedMethod.equals(item.key, ignoreCase = true),
+                            onClick = {
+                                haptics.tap()
+                                selectedMethod = item.key
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            // 6. Note Field
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "মন্তব্য / নোট (ঐচ্ছিক)",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+                OutlinedTextField(
+                    value = noteText,
+                    onValueChange = { noteText = it },
+                    placeholder = { Text("পেমেন্ট সংক্রান্ত কোনো বিবরণ বা রেফারেন্স...") },
+                    minLines = 2,
+                    maxLines = 4,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("input_staff_payment_note"),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+            }
+
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage ?: "",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 7. Action Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onBack,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .testTag("btn_cancel_staff_payment")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cancel",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("বাতিল", fontWeight = FontWeight.SemiBold)
+                }
+
+                Button(
+                    onClick = {
+                        val parsed = amountText.toDoubleOrNull()
+                        if (selectedStaff == null) {
+                            errorMessage = "অনুগ্রহ করে একজন স্টাফ নির্বাচন করুন"
+                            return@Button
+                        }
+                        if (parsed == null || parsed <= 0) {
+                            errorMessage = "অনুগ্রহ করে সঠিক টাকার পরিমাণ লিখুন"
+                            return@Button
+                        }
+
+                        haptics.tap()
+                        isSaving = true
+                        errorMessage = null
+
+                        val finalStaff = selectedStaff!!
+                        val paymentToSave = StaffPaymentEntity(
+                            id = existingPayment?.id ?: "",
+                            staffId = finalStaff.id,
+                            staffName = finalStaff.name,
+                            date = selectedDate,
+                            amount = parsed,
+                            paymentMethod = selectedMethod,
+                            note = noteText.trim(),
+                            createdAt = existingPayment?.createdAt ?: System.currentTimeMillis(),
+                            updatedAt = System.currentTimeMillis()
+                        )
+
+                        if (isEditing) {
+                            viewModel.updateStaffPayment(
+                                payment = paymentToSave,
+                                onSuccess = {
+                                    isSaving = false
+                                    SnackbarController.showMessage("স্টাফ পেমেন্ট সফলভাবে আপডেট হয়েছে!")
+                                    onBack()
+                                },
+                                onError = { err ->
+                                    isSaving = false
+                                    errorMessage = "আপডেট ব্যর্থ: $err"
+                                    SnackbarController.showError(errorMessage ?: "")
+                                }
+                            )
+                        } else {
+                            viewModel.addStaffPayment(
+                                payment = paymentToSave,
+                                onSuccess = {
+                                    isSaving = false
+                                    SnackbarController.showMessage("স্টাফ পেমেন্ট সফলভাবে সংরক্ষিত হয়েছে!")
+                                    onBack()
+                                },
+                                onError = { err ->
+                                    isSaving = false
+                                    errorMessage = "সংরক্ষণ ব্যর্থ: $err"
+                                    SnackbarController.showError(errorMessage ?: "")
+                                }
+                            )
+                        }
+                    },
+                    enabled = !isSaving,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .testTag("btn_save_staff_payment"),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Save",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isSaving) "সংরক্ষণ হচ্ছে..." else if (isEditing) "আপডেট করুন" else "সংরক্ষণ করুন",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
 
+private data class StaffPaymentMethodItem(
+    val key: String,
+    val label: String,
+    val icon: ImageVector
+)
+
 @Composable
-private fun PaymentMethodChip(
-    label: String,
-    icon: ImageVector,
+private fun StaffPaymentMethodChip(
+    item: StaffPaymentMethodItem,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val haptics = rememberHaptics()
     val bgColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
     val contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
@@ -628,10 +624,7 @@ private fun PaymentMethodChip(
             .clip(RoundedCornerShape(10.dp))
             .background(bgColor)
             .border(1.dp, borderColor, RoundedCornerShape(10.dp))
-            .clickable {
-                haptics.tap()
-                onClick()
-            }
+            .clickable { onClick() }
             .padding(vertical = 10.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -640,16 +633,16 @@ private fun PaymentMethodChip(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Icon(
-                imageVector = icon,
+                imageVector = item.icon,
                 contentDescription = null,
                 tint = contentColor,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
             Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(
+                text = item.label,
+                style = MaterialTheme.typography.bodySmall.copy(
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 11.sp
+                    fontSize = 12.sp
                 ),
                 color = contentColor
             )

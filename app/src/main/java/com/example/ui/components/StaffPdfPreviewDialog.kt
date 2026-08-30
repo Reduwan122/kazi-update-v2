@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -95,7 +96,8 @@ fun StaffPdfPreviewModalDialog(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp)
+                .padding(horizontal = 8.dp, vertical = 10.dp)
+                .navigationBarsPadding()
                 .clip(RoundedCornerShape(16.dp)),
             color = MaterialTheme.colorScheme.surface
         ) {
@@ -469,6 +471,24 @@ fun generateStaffHtml(
     val sortedPayments = payments.sortedBy { it.date }
     val currentDateStr = BanglaNumberFormatter.getCurrentDateBangla()
 
+    val distinctMonths = sortedPayments.map { p ->
+        if (p.date.contains("-")) {
+            val parts = p.date.split("-")
+            if (parts.size >= 2) "${parts[0]}-${parts[1].padStart(2, '0')}" else p.date
+        } else if (p.date.contains("/")) {
+            val parts = p.date.split("/")
+            if (parts.size == 3) "${parts[2]}-${parts[1].padStart(2, '0')}" else p.date
+        } else p.date.take(7)
+    }.filter { it.length == 7 && it.contains("-") }.distinct()
+
+    val monthTagText = if (distinctMonths.size == 1) {
+        BanglaNumberFormatter.formatYearMonth(distinctMonths.first())
+    } else if (distinctMonths.size > 1) {
+        "একাধিক মাস (${BanglaNumberFormatter.formatNumber(distinctMonths.size)} টি)"
+    } else {
+        "সকল রেকর্ড"
+    }
+
     val logoHtml = if (farmProfile.logoUri.isNotBlank()) {
         """<img src="${farmProfile.logoUri}" style="max-height: 55px; max-width: 80px; object-fit: contain; border-radius: 6px;" alt="Farm Logo" />"""
     } else if (farmProfile.logoEmoji.isNotBlank() && farmProfile.logoEmoji != "🐔") {
@@ -504,7 +524,7 @@ fun generateStaffHtml(
         <html lang="bn">
         <head>
             <meta charset="utf-8">
-            <title>${farmProfile.farmName} - $title</title>
+            <title>${farmProfile.farmName} - $title - $monthTagText</title>
             <style>
                 @page {
                     size: A4 portrait;
@@ -521,7 +541,7 @@ fun generateStaffHtml(
                     padding: 0;
                     color: #111111;
                     background-color: #ffffff;
-                    font-size: 11.5px;
+                    font-size: 12px;
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
                 }
@@ -590,7 +610,7 @@ fun generateStaffHtml(
                 }
 
                 .header-text .subtitle {
-                    font-size: 11px;
+                    font-size: 11.5px;
                     color: #222222;
                     margin: 1px 0;
                     font-weight: 500;
@@ -606,12 +626,12 @@ fun generateStaffHtml(
                     justify-content: space-between;
                     align-items: center;
                     margin-bottom: 6px;
-                    font-size: 12px;
+                    font-size: 12.5px;
                     font-weight: 600;
                 }
 
                 .meta strong {
-                    font-size: 12.5px;
+                    font-size: 13px;
                     color: #111111;
                 }
 
@@ -619,16 +639,27 @@ fun generateStaffHtml(
                     font-weight: bold;
                     color: #0D631B;
                     background-color: #E8F5E9;
-                    padding: 1.5px 7px;
+                    padding: 2px 8px;
                     border-radius: 4px;
                     border: 1px solid #C8E6C9;
-                    font-size: 11px;
+                    font-size: 11.5px;
                     display: inline-block;
                 }
 
                 .meta span {
                     color: #444444;
-                    font-size: 11.5px;
+                    font-size: 12px;
+                }
+
+                .summary-card {
+                    background: #F4F9F5;
+                    border: 1px solid #CCE8D2;
+                    border-radius: 6px;
+                    padding: 6px 14px;
+                    margin-bottom: 6px;
+                    display: flex;
+                    justify-content: space-around;
+                    font-size: 12px;
                 }
 
                 table {
@@ -636,7 +667,7 @@ fun generateStaffHtml(
                     border-collapse: separate;
                     border-spacing: 0;
                     margin-top: 4px;
-                    font-size: 11px;
+                    font-size: 11.8px;
                     border-radius: 5px;
                     overflow: hidden;
                     border: 1px solid #D0D0D0;
@@ -649,7 +680,7 @@ fun generateStaffHtml(
                     border-bottom: 1px solid #E0E0E0;
                     border-right: 1px solid #E0E0E0;
                     font-weight: 500;
-                    padding: 3.6px 6px;
+                    padding: 4px 6px;
                     line-height: 1.2;
                 }
 
@@ -666,9 +697,9 @@ fun generateStaffHtml(
                     color: #FFFFFF !important;
                     font-weight: 600;
                     text-align: center;
-                    font-size: 11px;
+                    font-size: 11.8px;
                     letter-spacing: 0.2px;
-                    padding: 4.5px 6px;
+                    padding: 4px 6px;
                 }
 
                 td.text-center {
@@ -688,16 +719,16 @@ fun generateStaffHtml(
                     color: #0B4D16;
                     border-top: 2px solid #0D631B;
                     font-weight: 700;
-                    font-size: 11.5px;
-                    padding: 4.2px 6px;
+                    font-size: 12px;
+                    padding: 4px 6px;
                 }
 
                 .footer-signatures {
                     display: flex;
                     justify-content: space-between;
                     padding: 0 30px;
-                    margin-top: 32px;
-                    margin-bottom: 3mm;
+                    margin-top: 28px;
+                    margin-bottom: 2mm;
                     page-break-inside: avoid;
                 }
 
@@ -706,7 +737,7 @@ fun generateStaffHtml(
                     width: 130px;
                     text-align: center;
                     padding-top: 5px;
-                    font-size: 11.5px;
+                    font-size: 12px;
                     font-weight: 600;
                     color: #222222;
                 }
@@ -727,7 +758,13 @@ fun generateStaffHtml(
 
                     <div class="meta">
                         <strong>$title</strong>
+                        <span class="report-month-tag">মাস: $monthTagText</span>
                         <span>তারিখ: $currentDateStr</span>
+                    </div>
+
+                    <div class="summary-card">
+                        <div><strong>মোট লেনদেন:</strong> ${BanglaNumberFormatter.formatNumber(sortedPayments.size)} বার</div>
+                        <div><strong>মোট পরিশোধিত অর্থ:</strong> ${BanglaNumberFormatter.formatCurrency(totalAmount)}</div>
                     </div>
 
                     <table>
@@ -747,8 +784,8 @@ fun generateStaffHtml(
                 </div>
 
                 <div class="footer-signatures">
-                    <div class="sig-line">ম্যানেজার</div>
-                    <div class="sig-line">অনুমোদনকারী</div>
+                    <div class="sig-line">হিসাব রক্ষক</div>
+                    <div class="sig-line">মালিকের স্বাক্ষর</div>
                 </div>
             </div>
         </body>

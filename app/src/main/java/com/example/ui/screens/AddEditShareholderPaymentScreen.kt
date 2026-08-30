@@ -23,12 +23,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -38,7 +39,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -53,17 +56,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.ShareholderEntity
 import com.example.data.local.ShareholderPaymentEntity
+import com.example.ui.components.AccessDeniedView
 import com.example.ui.components.BanglaNumberFormatter
 import com.example.ui.components.MainTopAppBar
 import com.example.ui.components.SnackbarController
@@ -132,7 +134,7 @@ fun AddEditShareholderPaymentScreen(
     var dropdownExpanded by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // DatePicker
+    // DatePicker Dialog
     val calendar = Calendar.getInstance()
     val datePickerDialog = DatePickerDialog(
         context,
@@ -158,55 +160,21 @@ fun AddEditShareholderPaymentScreen(
                 )
             }
         ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Text(
-                            text = "অননুমোদিত প্রবেশাধিকার",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "শুধুমাত্র এডমিন শেয়ারহোল্ডার পেমেন্ট যোগ ও সম্পাদন করতে পারেন।",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = onBack, shape = RoundedCornerShape(8.dp)) {
-                            Text("ফিরে যান")
-                        }
-                    }
-                }
-            }
+            AccessDeniedView(
+                title = "পেমেন্ট ব্যবস্থাপনা সংরক্ষিত",
+                message = "শুধুমাত্র এডমিন শেয়ারহোল্ডার পেমেন্ট যোগ ও সম্পাদন করতে পারেন।",
+                modifier = Modifier.padding(innerPadding)
+            )
         }
         return
     }
 
+    val liveAmount = amountText.toDoubleOrNull() ?: 0.0
+
     Scaffold(
         topBar = {
             MainTopAppBar(
-                title = if (isEditing) "পেমেন্ট পরিবর্তন করুন" else "পেমেন্ট যোগ করুন",
+                title = if (isEditing) "পেমেন্ট সম্পাদনা" else "শেয়ারহোল্ডার পেমেন্ট এন্ট্রি",
                 isRootScreen = false,
                 onBackClick = onBack
             )
@@ -215,375 +183,417 @@ fun AddEditShareholderPaymentScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(innerPadding)
                 .imePadding()
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
                 .testTag("add_edit_shareholder_payment_screen"),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Form Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // 1. Shareholder Selection
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "শেয়ারহোল্ডারের নাম",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+
+                if (shareholders.isEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = "কোনো শেয়ারহোল্ডার যুক্ত নেই। সেটিংস থেকে যোগ করুন।",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                            TextButton(onClick = onNavigateToShareholderSettings) {
+                                Text("সেটিংস", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                } else {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = selectedShareholder?.name ?: "",
+                            onValueChange = {},
+                            readOnly = true,
+                            placeholder = { Text("শেয়ারহোল্ডার নির্বাচন করুন") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Groups,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            trailingIcon = {
+                                IconButton(onClick = { dropdownExpanded = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = "Dropdown",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { dropdownExpanded = true }
+                                .testTag("dropdown_shareholder_select"),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+
+                        DropdownMenu(
+                            expanded = dropdownExpanded,
+                            onDismissRequest = { dropdownExpanded = false },
+                            modifier = Modifier.fillMaxWidth(0.85f)
+                        ) {
+                            shareholders.forEach { sh ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = sh.name,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontWeight = if (selectedShareholder?.id == sh.id) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                        )
+                                    },
+                                    onClick = {
+                                        selectedShareholder = sh
+                                        dropdownExpanded = false
+                                        errorMessage = null
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Date Picker Field
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "তারিখ",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+                OutlinedTextField(
+                    value = "${BanglaNumberFormatter.formatBanglaDate(selectedDate)} ($selectedDate)",
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = {
+                        IconButton(onClick = { datePickerDialog.show() }) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarMonth,
+                                contentDescription = "Select Date",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                        .clickable { datePickerDialog.show() }
+                        .testTag("field_date"),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+            }
+
+            // 3. Amount Field
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "কত টাকা দেওয়া হয়েছে",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { input ->
+                        val cleaned = BanglaNumberFormatter.toEnglishDigits(input)
+                        if (cleaned.isEmpty() || cleaned.matches(Regex("^\\d*\\.?\\d*$"))) {
+                            amountText = cleaned
+                            errorMessage = null
+                        }
+                    },
+                    placeholder = { Text("০.০০") },
+                    leadingIcon = {
+                        Text(
+                            text = "৳",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            ),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("input_payment_amount"),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+            }
+
+            // 4. Live Amount Summary Card
+            if (liveAmount > 0) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                 ) {
-                    // 1. Shareholder Selection Field
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "শেয়ারহোল্ডারের নাম",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        if (shareholders.isEmpty()) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f))
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Warning,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.error,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Text(
-                                            text = "কোনো শেয়ারহোল্ডার যুক্ত নেই। সেটিংস থেকে যোগ করুন।",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                    }
-                                    TextButton(onClick = onNavigateToShareholderSettings) {
-                                        Text("সেটিংস", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-                        } else {
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                OutlinedTextField(
-                                    value = selectedShareholder?.name ?: "",
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    placeholder = { Text("শেয়ারহোল্ডার নির্বাচন করুন") },
-                                    trailingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.ArrowDropDown,
-                                            contentDescription = "Dropdown",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.Groups,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { dropdownExpanded = true }
-                                        .testTag("dropdown_shareholder_select"),
-                                    enabled = false,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                        disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                                        disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        disabledLeadingIconColor = MaterialTheme.colorScheme.primary,
-                                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                )
-
-                                Box(
-                                    modifier = Modifier
-                                        .matchParentSize()
-                                        .clickable { dropdownExpanded = true }
-                                )
-
-                                DropdownMenu(
-                                    expanded = dropdownExpanded,
-                                    onDismissRequest = { dropdownExpanded = false },
-                                    modifier = Modifier.fillMaxWidth(0.85f)
-                                ) {
-                                    shareholders.forEach { sh ->
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    text = sh.name,
-                                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                                        fontWeight = if (selectedShareholder?.id == sh.id) FontWeight.Bold else FontWeight.Normal
-                                                    )
-                                                )
-                                            },
-                                            onClick = {
-                                                selectedShareholder = sh
-                                                dropdownExpanded = false
-                                                errorMessage = null
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 2. Date Field
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "তারিখ",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            OutlinedTextField(
-                                value = BanglaNumberFormatter.formatBanglaDate(selectedDate),
-                                onValueChange = {},
-                                readOnly = true,
-                                trailingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.CalendarToday,
-                                        contentDescription = "Select Date",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                enabled = false,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                    disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                                    disabledTrailingIconColor = MaterialTheme.colorScheme.primary
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Paid,
+                                contentDescription = "Total Amount",
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "পরিশোধিত অর্থ (টাকা)",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             )
+                        }
 
-                            Box(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .clickable { datePickerDialog.show() }
+                        Text(
+                            text = BanglaNumberFormatter.formatCurrency(liveAmount),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontSize = 18.sp
                             )
-                        }
-                    }
-
-                    // 3. Amount Field
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "কত টাকা দেওয়া হয়েছে",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        OutlinedTextField(
-                            value = amountText,
-                            onValueChange = { input ->
-                                if (input.isEmpty() || input.matches(Regex("^\\d*\\.?\\d*$"))) {
-                                    amountText = input
-                                    errorMessage = null
-                                }
-                            },
-                            placeholder = { Text("0.00") },
-                            leadingIcon = {
-                                Text(
-                                    text = "৳",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 18.sp
-                                    ),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(start = 12.dp)
-                                )
-                            },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("input_payment_amount")
-                        )
-                    }
-
-                    // 4. Payment Method Selection (Stitch 2x2 Grid design)
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "পেমেন্ট মাধ্যম",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        val methods = listOf(
-                            PaymentMethodItem("Cash", "ক্যাশ", Icons.Default.Payments),
-                            PaymentMethodItem("Bank", "ব্যাংক", Icons.Default.AccountBalance),
-                            PaymentMethodItem("bKash", "বিকাশ", Icons.Default.PhoneAndroid),
-                            PaymentMethodItem("Other", "অন্যান্য", Icons.Default.Wallet)
-                        )
-
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                PaymentMethodCard(
-                                    item = methods[0],
-                                    isSelected = selectedMethod.equals(methods[0].key, ignoreCase = true),
-                                    onClick = { selectedMethod = methods[0].key },
-                                    modifier = Modifier.weight(1f)
-                                )
-                                PaymentMethodCard(
-                                    item = methods[1],
-                                    isSelected = selectedMethod.equals(methods[1].key, ignoreCase = true),
-                                    onClick = { selectedMethod = methods[1].key },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                PaymentMethodCard(
-                                    item = methods[2],
-                                    isSelected = selectedMethod.equals(methods[2].key, ignoreCase = true),
-                                    onClick = { selectedMethod = methods[2].key },
-                                    modifier = Modifier.weight(1f)
-                                )
-                                PaymentMethodCard(
-                                    item = methods[3],
-                                    isSelected = selectedMethod.equals(methods[3].key, ignoreCase = true),
-                                    onClick = { selectedMethod = methods[3].key },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-                    }
-
-                    // 5. Note Field
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "নোট (ঐচ্ছিক)",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        OutlinedTextField(
-                            value = noteText,
-                            onValueChange = { noteText = it },
-                            placeholder = { Text("প্রয়োজনে নোট লিখুন") },
-                            minLines = 3,
-                            maxLines = 5,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("input_payment_note")
-                        )
-                    }
-
-                    // Validation Error Message
-                    errorMessage?.let { error ->
-                        Text(
-                            text = error,
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.error
                         )
                     }
                 }
             }
 
-            // Bottom Save Button
-            Button(
-                onClick = {
-                    haptics.tap()
-                    val shareholder = selectedShareholder
-                    if (shareholder == null) {
-                        errorMessage = "শেয়ারহোল্ডারের নাম নির্বাচন করুন"
-                        return@Button
-                    }
-                    val amountVal = amountText.toDoubleOrNull()
-                    if (amountVal == null || amountVal <= 0) {
-                        errorMessage = "সঠিক টাকার পরিমাণ দিন"
-                        return@Button
-                    }
-                    if (selectedDate.isBlank()) {
-                        errorMessage = "তারিখ নির্বাচন করুন"
-                        return@Button
-                    }
-
-                    isSaving = true
-                    val paymentRecord = ShareholderPaymentEntity(
-                        id = existingPayment?.id ?: "",
-                        shareholderId = shareholder.id,
-                        shareholderName = shareholder.name,
-                        date = selectedDate,
-                        amount = amountVal,
-                        paymentMethod = selectedMethod,
-                        note = noteText.trim(),
-                        createdAt = existingPayment?.createdAt ?: System.currentTimeMillis()
-                    )
-
-                    if (isEditing) {
-                        viewModel.updateShareholderPayment(
-                            payment = paymentRecord,
-                            onSuccess = {
-                                isSaving = false
-                                SnackbarController.showMessage("পেমেন্ট সফলভাবে পরিবর্তন করা হয়েছে!")
-                                onBack()
-                            },
-                            onError = { err ->
-                                isSaving = false
-                                errorMessage = err
-                                SnackbarController.showError(err)
-                            }
-                        )
-                    } else {
-                        viewModel.addShareholderPayment(
-                            payment = paymentRecord,
-                            onSuccess = {
-                                isSaving = false
-                                SnackbarController.showMessage("পেমেন্ট সফলভাবে সংরক্ষণ করা হয়েছে!")
-                                onBack()
-                            },
-                            onError = { err ->
-                                isSaving = false
-                                errorMessage = err
-                                SnackbarController.showError(err)
-                            }
-                        )
-                    }
-                },
-                enabled = !isSaving && (shareholders.isNotEmpty() || selectedShareholder != null),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .testTag("btn_save_payment"),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Save,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+            // 5. Payment Method Selection
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = if (isSaving) "সংরক্ষণ হচ্ছে..." else if (isEditing) "পরিবর্তন সংরক্ষণ করুন" else "পেমেন্ট সংরক্ষণ করুন",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+                    text = "পেমেন্ট মাধ্যম",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 )
+
+                val methods = listOf(
+                    PaymentMethodItem("Cash", "ক্যাশ", Icons.Default.Payments),
+                    PaymentMethodItem("Bank", "ব্যাংক", Icons.Default.AccountBalance),
+                    PaymentMethodItem("bKash", "বিকাশ", Icons.Default.PhoneAndroid),
+                    PaymentMethodItem("Other", "অন্যান্য", Icons.Default.Wallet)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    methods.forEach { item ->
+                        PaymentMethodChip(
+                            item = item,
+                            isSelected = selectedMethod.equals(item.key, ignoreCase = true),
+                            onClick = {
+                                haptics.tap()
+                                selectedMethod = item.key
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            // 6. Note Field
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "মন্তব্য / নোট (ঐচ্ছিক)",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+                OutlinedTextField(
+                    value = noteText,
+                    onValueChange = { noteText = it },
+                    placeholder = { Text("পেমেন্ট সংক্রান্ত কোনো বিবরণ বা রেফারেন্স...") },
+                    minLines = 2,
+                    maxLines = 4,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("input_payment_note"),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+            }
+
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage ?: "",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 7. Action Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onBack,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .testTag("btn_cancel_payment")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cancel",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("বাতিল", fontWeight = FontWeight.SemiBold)
+                }
+
+                Button(
+                    onClick = {
+                        val parsed = amountText.toDoubleOrNull()
+                        if (selectedShareholder == null) {
+                            errorMessage = "অনুগ্রহ করে একজন শেয়ারহোল্ডার নির্বাচন করুন"
+                            return@Button
+                        }
+                        if (parsed == null || parsed <= 0) {
+                            errorMessage = "অনুগ্রহ করে সঠিক টাকার পরিমাণ লিখুন"
+                            return@Button
+                        }
+
+                        haptics.tap()
+                        isSaving = true
+                        errorMessage = null
+
+                        val finalShareholder = selectedShareholder!!
+                        val paymentToSave = ShareholderPaymentEntity(
+                            id = existingPayment?.id ?: "",
+                            shareholderId = finalShareholder.id,
+                            shareholderName = finalShareholder.name,
+                            date = selectedDate,
+                            amount = parsed,
+                            paymentMethod = selectedMethod,
+                            note = noteText.trim(),
+                            createdAt = existingPayment?.createdAt ?: System.currentTimeMillis()
+                        )
+
+                        if (isEditing) {
+                            viewModel.updateShareholderPayment(
+                                payment = paymentToSave,
+                                onSuccess = {
+                                    isSaving = false
+                                    SnackbarController.showMessage("পেমেন্ট সফলভাবে আপডেট হয়েছে!")
+                                    onBack()
+                                },
+                                onError = { err ->
+                                    isSaving = false
+                                    errorMessage = "আপডেট ব্যর্থ: $err"
+                                    SnackbarController.showError(errorMessage ?: "")
+                                }
+                            )
+                        } else {
+                            viewModel.addShareholderPayment(
+                                payment = paymentToSave,
+                                onSuccess = {
+                                    isSaving = false
+                                    SnackbarController.showMessage("পেমেন্ট সফলভাবে সংরক্ষিত হয়েছে!")
+                                    onBack()
+                                },
+                                onError = { err ->
+                                    isSaving = false
+                                    errorMessage = "সংরক্ষণ ব্যর্থ: $err"
+                                    SnackbarController.showError(errorMessage ?: "")
+                                }
+                            )
+                        }
+                    },
+                    enabled = !isSaving,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .testTag("btn_save_payment"),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Save",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isSaving) "সংরক্ষণ হচ্ছে..." else if (isEditing) "আপডেট করুন" else "সংরক্ষণ করুন",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -598,15 +608,14 @@ private data class PaymentMethodItem(
 )
 
 @Composable
-private fun PaymentMethodCard(
+private fun PaymentMethodChip(
     item: PaymentMethodItem,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val haptics = rememberHaptics()
     val bgColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
 
     Box(
@@ -614,32 +623,30 @@ private fun PaymentMethodCard(
             .clip(RoundedCornerShape(10.dp))
             .background(bgColor)
             .border(1.dp, borderColor, RoundedCornerShape(10.dp))
-            .clickable {
-                haptics.tap()
-                onClick()
-            }
-            .padding(vertical = 12.dp, horizontal = 12.dp),
+            .clickable { onClick() }
+            .padding(vertical = 10.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Icon(
                 imageVector = item.icon,
                 contentDescription = null,
                 tint = contentColor,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = item.label,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    fontSize = 12.sp
                 ),
                 color = contentColor
             )
         }
     }
 }
+
 

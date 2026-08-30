@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -97,7 +98,8 @@ fun PdfPreviewModalDialog(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp)
+                .padding(horizontal = 8.dp, vertical = 10.dp)
+                .navigationBarsPadding()
                 .clip(RoundedCornerShape(16.dp)),
             color = MaterialTheme.colorScheme.surface
         ) {
@@ -878,7 +880,7 @@ fun TableCell(
         text = text,
         style = MaterialTheme.typography.bodySmall.copy(
             color = Color.Black,
-            fontSize = if (isHeader) 11.sp else 10.sp,
+            fontSize = if (isHeader) 11.5.sp else 10.8.sp,
             fontWeight = if (isHeader || isBold) FontWeight.Bold else FontWeight.Normal
         ),
         modifier = Modifier
@@ -1048,11 +1050,12 @@ fun generateHtmlContent(
                 val totalProd = monthReports.sumOf { it.eggProduction }
                 val avgBirds = if (monthReports.isNotEmpty()) monthReports.map { it.currentBirds }.average().toInt() else 0
                 val overallLayingRate = if (avgBirds > 0 && monthReports.isNotEmpty()) (totalProd.toDouble() / (avgBirds * monthReports.size) * 100) else 0.0
+                val overallMortalityRate = if (avgBirds > 0 && monthReports.isNotEmpty()) (totalMortality.toDouble() / (avgBirds * monthReports.size) * 100) else 0.0
                 tableRows.append("<tr class='total-row'>")
                 tableRows.append("<td class='text-center'>সর্বমোট / গড়</td>")
                 tableRows.append("<td>${BanglaNumberFormatter.formatNumber(avgBirds)}</td>")
                 tableRows.append("<td>${BanglaNumberFormatter.formatNumber(totalMortality)}</td>")
-                tableRows.append("<td>-</td>")
+                tableRows.append("<td>${String.format(Locale.US, "%.2f%%", overallMortalityRate)}</td>")
                 tableRows.append("<td style='color:#0D631B;'>${BanglaNumberFormatter.formatNumber(totalProd)}</td>")
                 tableRows.append("<td>${String.format(Locale.US, "%.1f%%", overallLayingRate)}</td><td>-</td></tr>")
             }
@@ -1155,8 +1158,11 @@ fun generateHtmlContent(
                 val totalProd = monthReports.sumOf { it.eggProduction }
                 val totalSold = monthReports.sumOf { it.eggSold }
                 val totalSale = monthReports.sumOf { it.totalSale }
+                val totalDead = monthReports.sumOf { it.deadBirds }
                 tableRows.append("<tr class='total-row'>")
-                tableRows.append("<td class='text-center'>সর্বমোট</td><td>-</td><td>-</td>")
+                tableRows.append("<td class='text-center'>সর্বমোট</td>")
+                tableRows.append("<td>-</td>")
+                tableRows.append("<td>${BanglaNumberFormatter.formatNumber(totalDead)}</td>")
                 tableRows.append("<td>${BanglaNumberFormatter.formatNumber(totalProd)}</td>")
                 tableRows.append("<td>${BanglaNumberFormatter.formatNumber(totalSold)}</td>")
                 tableRows.append("<td>-</td>")
@@ -1164,7 +1170,7 @@ fun generateHtmlContent(
             }
         }
 
-        val tableClass = if (rowCount <= 12) "table-spacious" else "table-standard"
+        val tableClass = if (rowCount > 15) "table-standard" else "table-spacious"
 
         pagesHtml.append("""
             <div class="page-container">
@@ -1173,19 +1179,18 @@ fun generateHtmlContent(
                         <div class="header-logo">$logoHtml</div>
                         <div class="header-text">
                             <h1 class="title">${farmProfile.farmName}</h1>
-                            <div class="subtitle">লেয়ার পোল্ট্রি ফার্ম</div>
-                            <div class="subtitle">প্রোঃ ${farmProfile.ownerName} | মোবাইলঃ ${farmProfile.mobileNumber}</div>
-                            <div class="subtitle">ঠিকানাঃ ${farmProfile.address}</div>
+                            <div class="subtitle">প্রো: ${farmProfile.ownerName} &bull; মোবাইল: ${farmProfile.mobileNumber}</div>
+                            <div class="subtitle">${farmProfile.address}</div>
                         </div>
                         <div class="header-spacer"></div>
                     </div>
+
                     <div class="meta">
-                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
-                            <strong>$title</strong>
-                            <span class="report-month-tag">মাসঃ $monthLabel</span>
-                        </div>
+                        <strong>$title</strong>
+                        <span class="report-month-tag">মাস: $monthLabel</span>
                         <span>তারিখ: $currentDateStr</span>
                     </div>
+
                     <table class="$tableClass">
                         <thead>
                             <tr>$tableHeaders</tr>
@@ -1195,9 +1200,11 @@ fun generateHtmlContent(
                         </tbody>
                     </table>
                 </div>
+
                 <div class="footer-signatures">
-                    <div class="sig-line">প্রস্তুতকারক</div>
-                    <div class="sig-line">অনুমোদনকারী</div>
+                    <div class="sig-line">হিসাব রক্ষক</div>
+                    <div class="sig-line">ম্যানেজার</div>
+                    <div class="sig-line">মালিকের স্বাক্ষর</div>
                 </div>
             </div>
         """.trimIndent())
@@ -1225,7 +1232,7 @@ fun generateHtmlContent(
                     padding: 0;
                     color: #111111;
                     background-color: #ffffff;
-                    font-size: 11.5px;
+                    font-size: 12px;
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
                 }
@@ -1295,7 +1302,7 @@ fun generateHtmlContent(
                 }
 
                 .header-text .subtitle {
-                    font-size: 11px;
+                    font-size: 11.5px;
                     color: #222222;
                     margin: 1px 0;
                     font-weight: 500;
@@ -1312,12 +1319,12 @@ fun generateHtmlContent(
                     justify-content: space-between;
                     align-items: center;
                     margin-bottom: 6px;
-                    font-size: 12px;
+                    font-size: 12.5px;
                     font-weight: 600;
                 }
 
                 .meta strong {
-                    font-size: 12.5px;
+                    font-size: 13px;
                     color: #111111;
                 }
 
@@ -1325,16 +1332,16 @@ fun generateHtmlContent(
                     font-weight: bold;
                     color: #0D631B;
                     background-color: #E8F5E9;
-                    padding: 1.5px 7px;
+                    padding: 2px 8px;
                     border-radius: 4px;
                     border: 1px solid #C8E6C9;
-                    font-size: 11px;
+                    font-size: 11.5px;
                     display: inline-block;
                 }
 
                 .meta span {
                     color: #444444;
-                    font-size: 11.5px;
+                    font-size: 12px;
                 }
 
                 /* ─── ডেটা টেবিল ─── */
@@ -1343,7 +1350,7 @@ fun generateHtmlContent(
                     border-collapse: separate;
                     border-spacing: 0;
                     margin-top: 4px;
-                    font-size: 11px;
+                    font-size: 11.8px;
                     border-radius: 5px;
                     overflow: hidden;
                     border: 1px solid #D0D0D0;
@@ -1359,14 +1366,14 @@ fun generateHtmlContent(
                 }
 
                 table.table-standard th, table.table-standard td {
-                    padding: 3.6px 6px;
-                    line-height: 1.2;
+                    padding: 3.2px 6px;
+                    line-height: 1.18;
                 }
 
                 table.table-spacious th, table.table-spacious td {
                     padding: 5.5px 7.5px;
                     line-height: 1.25;
-                    font-size: 11.5px;
+                    font-size: 12px;
                 }
 
                 th:last-child, td:last-child {
@@ -1382,9 +1389,9 @@ fun generateHtmlContent(
                     color: #FFFFFF !important;
                     font-weight: 600;
                     text-align: center;
-                    font-size: 11px;
+                    font-size: 11.8px;
                     letter-spacing: 0.2px;
-                    padding: 4.5px 6px;
+                    padding: 4px 6px;
                 }
 
                 td.text-center {
@@ -1404,8 +1411,8 @@ fun generateHtmlContent(
                     color: #0B4D16;
                     border-top: 2px solid #0D631B;
                     font-weight: 700;
-                    font-size: 11.5px;
-                    padding: 4.2px 6px;
+                    font-size: 12px;
+                    padding: 4px 6px;
                 }
 
                 /* ─── সিগনেচার সেকশন ─── */
@@ -1413,8 +1420,8 @@ fun generateHtmlContent(
                     display: flex;
                     justify-content: space-between;
                     padding: 0 30px;
-                    margin-top: 32px;
-                    margin-bottom: 3mm;
+                    margin-top: 24px;
+                    margin-bottom: 2mm;
                     page-break-inside: avoid;
                 }
 
@@ -1423,7 +1430,7 @@ fun generateHtmlContent(
                     width: 130px;
                     text-align: center;
                     padding-top: 5px;
-                    font-size: 11.5px;
+                    font-size: 12px;
                     font-weight: 600;
                     color: #222222;
                 }

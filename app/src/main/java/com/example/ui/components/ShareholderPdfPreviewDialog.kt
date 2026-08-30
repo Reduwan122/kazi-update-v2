@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -94,7 +95,8 @@ fun ShareholderPdfPreviewModalDialog(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp)
+                .padding(horizontal = 8.dp, vertical = 10.dp)
+                .navigationBarsPadding()
                 .clip(RoundedCornerShape(16.dp)),
             color = MaterialTheme.colorScheme.surface
         ) {
@@ -522,33 +524,33 @@ private fun generateShareholderHtml(
             <meta charset="utf-8">
             <title>$title - $monthTagText</title>
             <style>
-                @page { size: A4 portrait; margin: 12mm 12mm 14mm 12mm; }
+                @page { size: A4 portrait; margin: 8mm 10mm 8mm 10mm; }
                 *, *:before, *:after { box-sizing: border-box; }
-                body { font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif; color: #222; margin: 0; padding: 0; font-size: 12px; }
-                .page-container { width: 100%; min-height: 268mm; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; break-after: page; box-sizing: border-box; padding-bottom: 2mm; }
+                body { font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif; color: #111111; margin: 0; padding: 0; font-size: 12px; }
+                .page-container { width: 100%; min-height: 275mm; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; break-after: page; box-sizing: border-box; padding-bottom: 1mm; }
                 .page-container:last-child { page-break-after: avoid; break-after: auto; }
                 .page-body { flex: 1 0 auto; width: 100%; }
-                .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2.5px solid #0D631B; padding-top: 2px; padding-bottom: 8px; margin-bottom: 12px; }
-                .header-logo { flex: 0 0 85px; text-align: left; }
+                .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0D631B; padding-top: 0; padding-bottom: 6px; margin-bottom: 8px; }
+                .header-logo { flex: 0 0 80px; text-align: left; }
                 .header-text { flex: 1 1 auto; text-align: center; }
-                .header-spacer { flex: 0 0 85px; }
-                .farm-name { font-size: 20px; font-weight: bold; color: #0D631B; margin: 0; line-height: 1.2; letter-spacing: 0.4px; }
-                .farm-sub { font-size: 11.5px; color: #222; margin: 2px 0; font-weight: 500; line-height: 1.3; }
-                .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12.5px; font-weight: 600; }
-                .meta strong { font-size: 13px; color: #111; }
+                .header-spacer { flex: 0 0 80px; }
+                .farm-name { font-size: 19px; font-weight: bold; color: #0D631B; margin: 0; line-height: 1.2; letter-spacing: 0.3px; }
+                .farm-sub { font-size: 11.5px; color: #222222; margin: 1px 0; font-weight: 500; line-height: 1.25; }
+                .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12.5px; font-weight: 600; }
+                .meta strong { font-size: 13px; color: #111111; }
                 .report-month-tag { font-weight: bold; color: #0D631B; background-color: #E8F5E9; padding: 2px 8px; border-radius: 4px; border: 1px solid #C8E6C9; font-size: 11.5px; display: inline-block; }
-                .meta span { color: #444; font-size: 12px; }
-                .summary-card { background: #F4F9F5; border: 1px solid #CCE8D2; border-radius: 6px; padding: 8px 16px; margin-bottom: 10px; display: flex; justify-content: space-around; font-size: 12px; }
-                table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 6px; font-size: 11.5px; border-radius: 6px; overflow: hidden; border: 1px solid #D0D0D0; box-shadow: 0 2px 6px rgba(0,0,0,0.03); margin-bottom: 10px; }
-                th, td { border-bottom: 1px solid #E0E0E0; border-right: 1px solid #E0E0E0; padding: 6px 8px; line-height: 1.3; }
+                .meta span { color: #444444; font-size: 12px; }
+                .summary-card { background: #F4F9F5; border: 1px solid #CCE8D2; border-radius: 6px; padding: 6px 14px; margin-bottom: 6px; display: flex; justify-content: space-around; font-size: 12px; }
+                table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 4px; font-size: 11.8px; border-radius: 5px; overflow: hidden; border: 1px solid #D0D0D0; box-shadow: 0 1px 4px rgba(0,0,0,0.03); margin-bottom: 6px; }
+                th, td { border-bottom: 1px solid #E0E0E0; border-right: 1px solid #E0E0E0; padding: 4px 6px; line-height: 1.2; }
                 th:last-child, td:last-child { border-right: none; }
                 tbody tr:last-child td { border-bottom: none; }
-                th { background-color: #0D631B; color: #FFF; text-align: center; font-weight: 600; font-size: 11.5px; }
+                th { background-color: #0D631B; color: #FFF; text-align: center; font-weight: 600; font-size: 11.8px; padding: 4px 6px; }
                 .even-row { background-color: #F4F9F5; }
                 .total-row { background-color: #E8F5E9; font-weight: bold; color: #0D631B; }
-                .total-row td { color: #0B4D16; border-top: 2px solid #0D631B; font-weight: 700; font-size: 12px; padding: 6px 8px; }
-                .signatures { display: flex; justify-content: space-between; padding: 0 30px; margin-top: 55px; margin-bottom: 6mm; page-break-inside: avoid; }
-                .sig-box { width: 130px; text-align: center; border-top: 1.5px solid #333; padding-top: 6px; font-size: 12px; font-weight: 600; }
+                .total-row td { color: #0B4D16; border-top: 2px solid #0D631B; font-weight: 700; font-size: 12px; padding: 4px 6px; }
+                .signatures { display: flex; justify-content: space-between; padding: 0 30px; margin-top: 28px; margin-bottom: 2mm; page-break-inside: avoid; }
+                .sig-box { width: 130px; text-align: center; border-top: 1.5px solid #333333; padding-top: 5px; font-size: 12px; font-weight: 600; color: #222222; }
             </style>
         </head>
         <body>

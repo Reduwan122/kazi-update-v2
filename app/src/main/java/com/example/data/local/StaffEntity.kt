@@ -15,6 +15,8 @@ data class StaffEntity(
     val name: String = "",
     @Json(name = "phone")
     val phone: String = "",
+    @Json(name = "designation")
+    val designation: String = "",
     @Json(name = "createdAt")
     val createdAt: Long = System.currentTimeMillis()
 )

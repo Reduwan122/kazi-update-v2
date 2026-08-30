@@ -28,3 +28,4 @@ data class StaffPaymentEntity(
     @Json(name = "updatedAt")
     val updatedAt: Long = System.currentTimeMillis()
 )
+
