@@ -14,10 +14,10 @@ android {
 
   val propVersionCode = project.findProperty("VERSION_CODE")?.toString()?.toIntOrNull()
       ?: System.getenv("VERSION_CODE")?.toIntOrNull()
-      ?: 1
+      ?: 100
   val propVersionName = project.findProperty("VERSION_NAME")?.toString()
       ?: System.getenv("VERSION_NAME")
-      ?: "1.0.0-dev"
+      ?: "2.5.0"
 
   defaultConfig {
     applicationId = "com.aistudio.kaziagro.poultr"
