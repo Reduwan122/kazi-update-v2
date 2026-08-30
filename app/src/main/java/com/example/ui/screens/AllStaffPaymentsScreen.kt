@@ -48,6 +48,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -190,24 +191,24 @@ fun AllStaffPaymentsScreen(
     Scaffold(
         topBar = {
             MainTopAppBar(
-                title = "সকল স্টাফ পেমেন্ট",
+                title = "স্টাফ পেমেন্ট রিপোর্ট",
                 isRootScreen = false,
                 onBackClick = onBack
             )
         },
         floatingActionButton = {
-            if (isAdmin) {
-                FloatingActionButton(
-                    onClick = {
-                        haptics.tap()
-                        onNavigateToAddPayment()
-                    },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.testTag("fab_add_staff_payment")
-                ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Payment")
-                }
+            FloatingActionButton(
+                onClick = {
+                    haptics.tap()
+                    val reportTitle = if (selectedMonth == "সকল রেকর্ড") "স্টাফ পেমেন্ট রিপোর্ট" else "স্টাফ পেমেন্ট রিপোর্ট (${BanglaNumberFormatter.formatYearMonth(selectedMonth)})"
+                    onOpenPdfPreview(filteredPayments, reportTitle)
+                },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.testTag("fab_export_staff_payments_pdf")
+            ) {
+                Icon(imageVector = Icons.Default.PictureAsPdf, contentDescription = "PDF Preview")
             }
         }
     ) { innerPadding ->
@@ -223,7 +224,7 @@ fun AllStaffPaymentsScreen(
             Spacer(modifier = Modifier.height(2.dp))
 
             // ══════════════════════════════════════════════════════════════
-            // Top Controls: Month Selector & Search / PDF
+            // Top Controls: Month Selector & Filter
             // ══════════════════════════════════════════════════════════════
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -319,29 +320,20 @@ fun AllStaffPaymentsScreen(
                     )
                 }
 
-                // PDF Export Button
-                IconButton(
-                    onClick = {
-                        haptics.tap()
-                        val reportTitle = if (selectedMonth == "সকল রেকর্ড") "স্টাফ পেমেন্ট রিপোর্ট" else "স্টাফ পেমেন্ট রিপোর্ট (${BanglaNumberFormatter.formatYearMonth(selectedMonth)})"
-                        onOpenPdfPreview(filteredPayments, reportTitle)
-                    },
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                            RoundedCornerShape(10.dp)
-                        )
-                        .testTag("btn_export_staff_payments_pdf")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PictureAsPdf,
-                        contentDescription = "PDF Preview",
-                        tint = Color(0xFFBA1A1A)
-                    )
+                if (isAdmin) {
+                    Button(
+                        onClick = {
+                            haptics.tap()
+                            onNavigateToAddPayment()
+                        },
+                        modifier = Modifier.height(44.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("পেমেন্ট যোগ", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
 
@@ -372,35 +364,104 @@ fun AllStaffPaymentsScreen(
             )
 
             // ══════════════════════════════════════════════════════════════
-            // Summary Cards: Total Staff, Total Payments, Total Paid
+            // Bento Grid Summary Cards: Total Staff, Total Payments, Total Paid
             // ══════════════════════════════════════════════════════════════
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Card 1: মোট স্টাফ
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceContainerHigh)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(Icons.Default.Group, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                                Text("মোট স্টাফ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${BanglaNumberFormatter.formatNumber(if (staffList.isNotEmpty()) staffList.size else uniqueStaffCount)} জন",
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            )
+                        }
+                    }
+
+                    // Card 2: মোট পেমেন্ট
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceContainerHigh)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                                Text("মোট পেমেন্ট", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${BanglaNumberFormatter.formatNumber(filteredPayments.size)} বার",
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            )
+                        }
+                    }
+                }
+
+                // Card 3: মোট দেওয়া হয়েছে (Full Width)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(16.dp))
+                            Text("মোট দেওয়া হয়েছে", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f))
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = BanglaNumberFormatter.formatCurrency(totalPaid),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        )
+                    }
+                }
+            }
+
+            // Section Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                SummaryCard(
-                    title = "মোট স্টাফ",
-                    value = "${BanglaNumberFormatter.formatNumber(if (staffList.isNotEmpty()) staffList.size else uniqueStaffCount)} জন",
-                    icon = Icons.Default.Group,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f)
+                Text(
+                    text = "পেমেন্ট হিস্ট্রি",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 )
-
-                SummaryCard(
-                    title = "মোট পেমেন্ট",
-                    value = "${BanglaNumberFormatter.formatNumber(filteredPayments.size)} টি",
-                    icon = Icons.Default.CalendarToday,
-                    color = Color(0xFF0288D1),
-                    modifier = Modifier.weight(1f)
-                )
-
-                SummaryCard(
-                    title = "মোট দেওয়া হয়েছে",
-                    value = BanglaNumberFormatter.formatCurrency(totalPaid),
-                    icon = Icons.Default.AccountBalanceWallet,
-                    color = Color(0xFF0D631B),
-                    modifier = Modifier.weight(1.3f)
-                )
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh
+                ) {
+                    Text(
+                        text = if (selectedMonth == "সকল রেকর্ড") "সকল রেকর্ড" else BanglaNumberFormatter.formatYearMonth(selectedMonth),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
             }
 
             // ══════════════════════════════════════════════════════════════

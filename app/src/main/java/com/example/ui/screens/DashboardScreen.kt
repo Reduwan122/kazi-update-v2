@@ -318,22 +318,28 @@ fun DashboardScreen(
             Spacer(modifier = Modifier.height(72.dp))
         }
 
-        // Payment Option Choice Dialog
+        // Payment Option Choice Modal Dialog (Matching Stitch _5 Spec)
         if (showPaymentTypeDialog) {
             androidx.compose.material3.AlertDialog(
                 onDismissRequest = { showPaymentTypeDialog = false },
                 title = {
-                    Text(
-                        text = "পেমেন্ট ক্যাটাগরি নির্বাচন করুন",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "পেমেন্ট প্রকার নির্বাচন করুন",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
                 },
                 text = {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // 1. Shareholder Payment option
+                        // 1. Shareholder Payment Option
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -341,7 +347,7 @@ fun DashboardScreen(
                                     showPaymentTypeDialog = false
                                     onNavigateToAddShareholderPayment()
                                 },
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
@@ -353,11 +359,11 @@ fun DashboardScreen(
                                     .fillMaxWidth()
                                     .padding(14.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(40.dp)
+                                        .size(44.dp)
                                         .clip(CircleShape)
                                         .background(MaterialTheme.colorScheme.primaryContainer),
                                     contentAlignment = Alignment.Center
@@ -366,10 +372,10 @@ fun DashboardScreen(
                                         imageVector = Icons.Default.Group,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(22.dp)
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = "শেয়ারহোল্ডার পেমেন্ট",
                                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
@@ -384,7 +390,7 @@ fun DashboardScreen(
                             }
                         }
 
-                        // 2. Staff Payment option
+                        // 2. Staff Payment Option
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -392,7 +398,7 @@ fun DashboardScreen(
                                     showPaymentTypeDialog = false
                                     onNavigateToAddStaffPayment()
                                 },
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
@@ -404,11 +410,11 @@ fun DashboardScreen(
                                     .fillMaxWidth()
                                     .padding(14.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(40.dp)
+                                        .size(44.dp)
                                         .clip(CircleShape)
                                         .background(Color(0xFFE8F5E9)),
                                     contentAlignment = Alignment.Center
@@ -417,10 +423,10 @@ fun DashboardScreen(
                                         imageVector = Icons.Default.Payments,
                                         contentDescription = null,
                                         tint = Color(0xFF0D631B),
-                                        modifier = Modifier.size(22.dp)
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = "স্টাফ পেমেন্ট",
                                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),

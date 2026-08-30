@@ -419,34 +419,67 @@ fun AddEditStaffPaymentScreen(
                 }
             }
 
-            // 5. Payment Method Selection
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            // 5. Payment Method Selection (2x2 Bento Grid)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = "পেমেন্ট মাধ্যম",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
 
-                val methods = listOf(
+                val methodList = listOf(
                     StaffPaymentMethodItem("Cash", "ক্যাশ", Icons.Default.Payments),
                     StaffPaymentMethodItem("Bank", "ব্যাংক", Icons.Default.AccountBalance),
                     StaffPaymentMethodItem("bKash", "বিকাশ", Icons.Default.PhoneAndroid),
                     StaffPaymentMethodItem("Other", "অন্যান্য", Icons.Default.Wallet)
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    methods.forEach { item ->
-                        StaffPaymentMethodChip(
-                            item = item,
-                            isSelected = selectedMethod.equals(item.key, ignoreCase = true),
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        StaffPaymentMethodCard(
+                            item = methodList[0],
+                            isSelected = selectedMethod.equals(methodList[0].key, ignoreCase = true),
                             onClick = {
                                 haptics.tap()
-                                selectedMethod = item.key
+                                selectedMethod = methodList[0].key
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        StaffPaymentMethodCard(
+                            item = methodList[1],
+                            isSelected = selectedMethod.equals(methodList[1].key, ignoreCase = true),
+                            onClick = {
+                                haptics.tap()
+                                selectedMethod = methodList[1].key
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        StaffPaymentMethodCard(
+                            item = methodList[2],
+                            isSelected = selectedMethod.equals(methodList[2].key, ignoreCase = true),
+                            onClick = {
+                                haptics.tap()
+                                selectedMethod = methodList[2].key
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        StaffPaymentMethodCard(
+                            item = methodList[3],
+                            isSelected = selectedMethod.equals(methodList[3].key, ignoreCase = true),
+                            onClick = {
+                                haptics.tap()
+                                selectedMethod = methodList[3].key
                             },
                             modifier = Modifier.weight(1f)
                         )
@@ -457,19 +490,19 @@ fun AddEditStaffPaymentScreen(
             // 6. Note Field
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = "মন্তব্য / নোট (ঐচ্ছিক)",
+                    text = "নোট (ঐচ্ছিক)",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
                 OutlinedTextField(
                     value = noteText,
                     onValueChange = { noteText = it },
-                    placeholder = { Text("পেমেন্ট সংক্রান্ত কোনো বিবরণ বা রেফারেন্স...") },
-                    minLines = 2,
-                    maxLines = 4,
-                    shape = RoundedCornerShape(10.dp),
+                    placeholder = { Text("পেমেন্টের বিবরণ লিখুন...") },
+                    minLines = 3,
+                    maxLines = 5,
+                    shape = RoundedCornerShape(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("input_staff_payment_note"),
@@ -492,109 +525,87 @@ fun AddEditStaffPaymentScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 7. Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onBack,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp)
-                        .testTag("btn_cancel_staff_payment")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Cancel",
-                        modifier = Modifier.size(18.dp)
+            // 7. Full-width Save Button
+            Button(
+                onClick = {
+                    val parsed = amountText.toDoubleOrNull()
+                    if (selectedStaff == null) {
+                        errorMessage = "অনুগ্রহ করে একজন স্টাফ নির্বাচন করুন"
+                        return@Button
+                    }
+                    if (parsed == null || parsed <= 0) {
+                        errorMessage = "অনুগ্রহ করে সঠিক টাকার পরিমাণ লিখুন"
+                        return@Button
+                    }
+
+                    haptics.tap()
+                    isSaving = true
+                    errorMessage = null
+
+                    val finalStaff = selectedStaff!!
+                    val paymentToSave = StaffPaymentEntity(
+                        id = existingPayment?.id ?: "",
+                        staffId = finalStaff.id,
+                        staffName = finalStaff.name,
+                        date = selectedDate,
+                        amount = parsed,
+                        paymentMethod = selectedMethod,
+                        note = noteText.trim(),
+                        createdAt = existingPayment?.createdAt ?: System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis()
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("বাতিল", fontWeight = FontWeight.SemiBold)
-                }
 
-                Button(
-                    onClick = {
-                        val parsed = amountText.toDoubleOrNull()
-                        if (selectedStaff == null) {
-                            errorMessage = "অনুগ্রহ করে একজন স্টাফ নির্বাচন করুন"
-                            return@Button
-                        }
-                        if (parsed == null || parsed <= 0) {
-                            errorMessage = "অনুগ্রহ করে সঠিক টাকার পরিমাণ লিখুন"
-                            return@Button
-                        }
-
-                        haptics.tap()
-                        isSaving = true
-                        errorMessage = null
-
-                        val finalStaff = selectedStaff!!
-                        val paymentToSave = StaffPaymentEntity(
-                            id = existingPayment?.id ?: "",
-                            staffId = finalStaff.id,
-                            staffName = finalStaff.name,
-                            date = selectedDate,
-                            amount = parsed,
-                            paymentMethod = selectedMethod,
-                            note = noteText.trim(),
-                            createdAt = existingPayment?.createdAt ?: System.currentTimeMillis(),
-                            updatedAt = System.currentTimeMillis()
+                    if (isEditing) {
+                        viewModel.updateStaffPayment(
+                            payment = paymentToSave,
+                            onSuccess = {
+                                isSaving = false
+                                SnackbarController.showMessage("স্টাফ পেমেন্ট সফলভাবে আপডেট হয়েছে!")
+                                onBack()
+                            },
+                            onError = { err ->
+                                isSaving = false
+                                errorMessage = "আপডেট ব্যর্থ: $err"
+                                SnackbarController.showError(errorMessage ?: "")
+                            }
                         )
-
-                        if (isEditing) {
-                            viewModel.updateStaffPayment(
-                                payment = paymentToSave,
-                                onSuccess = {
-                                    isSaving = false
-                                    SnackbarController.showMessage("স্টাফ পেমেন্ট সফলভাবে আপডেট হয়েছে!")
-                                    onBack()
-                                },
-                                onError = { err ->
-                                    isSaving = false
-                                    errorMessage = "আপডেট ব্যর্থ: $err"
-                                    SnackbarController.showError(errorMessage ?: "")
-                                }
-                            )
-                        } else {
-                            viewModel.addStaffPayment(
-                                payment = paymentToSave,
-                                onSuccess = {
-                                    isSaving = false
-                                    SnackbarController.showMessage("স্টাফ পেমেন্ট সফলভাবে সংরক্ষিত হয়েছে!")
-                                    onBack()
-                                },
-                                onError = { err ->
-                                    isSaving = false
-                                    errorMessage = "সংরক্ষণ ব্যর্থ: $err"
-                                    SnackbarController.showError(errorMessage ?: "")
-                                }
-                            )
-                        }
-                    },
-                    enabled = !isSaving,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp)
-                        .testTag("btn_save_staff_payment"),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Save",
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isSaving) "সংরক্ষণ হচ্ছে..." else if (isEditing) "আপডেট করুন" else "সংরক্ষণ করুন",
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                    } else {
+                        viewModel.addStaffPayment(
+                            payment = paymentToSave,
+                            onSuccess = {
+                                isSaving = false
+                                SnackbarController.showMessage("স্টাফ পেমেন্ট সফলভাবে সংরক্ষিত হয়েছে!")
+                                onBack()
+                            },
+                            onError = { err ->
+                                isSaving = false
+                                errorMessage = "সংরক্ষণ ব্যর্থ: $err"
+                                SnackbarController.showError(errorMessage ?: "")
+                            }
+                        )
+                    }
+                },
+                enabled = !isSaving,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .testTag("btn_save_staff_payment"),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Save",
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isSaving) "সংরক্ষণ হচ্ছে..." else if (isEditing) "পেমেন্ট আপডেট করুন" else "পেমেন্ট সংরক্ষণ করুন",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -609,28 +620,29 @@ private data class StaffPaymentMethodItem(
 )
 
 @Composable
-private fun StaffPaymentMethodChip(
+private fun StaffPaymentMethodCard(
     item: StaffPaymentMethodItem,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val bgColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-    val contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.outline
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
+            .height(48.dp)
+            .clip(RoundedCornerShape(8.dp))
             .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(10.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
             .clickable { onClick() }
-            .padding(vertical = 10.dp, horizontal = 4.dp),
+            .padding(horizontal = 12.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
             Icon(
                 imageVector = item.icon,
@@ -638,11 +650,12 @@ private fun StaffPaymentMethodChip(
                 tint = contentColor,
                 modifier = Modifier.size(20.dp)
             )
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = item.label,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 12.sp
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 15.sp
                 ),
                 color = contentColor
             )

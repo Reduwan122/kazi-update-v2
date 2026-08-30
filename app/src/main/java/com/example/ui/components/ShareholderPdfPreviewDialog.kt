@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -95,8 +96,8 @@ fun ShareholderPdfPreviewModalDialog(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp, vertical = 10.dp)
-                .navigationBarsPadding()
+                .systemBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 8.dp)
                 .clip(RoundedCornerShape(16.dp)),
             color = MaterialTheme.colorScheme.surface
         ) {
@@ -228,9 +229,10 @@ fun ShareholderPdfPreviewModalDialog(
                                 ) {
                                     Text(
                                         text = farmProfile.farmName,
-                                        style = MaterialTheme.typography.titleLarge.copy(
+                                        style = MaterialTheme.typography.headlineSmall.copy(
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF0D631B)
+                                            color = Color(0xFF0D631B),
+                                            fontSize = 20.sp
                                         ),
                                         textAlign = TextAlign.Center
                                     )
@@ -242,18 +244,10 @@ fun ShareholderPdfPreviewModalDialog(
                                         )
                                     )
                                     Text(
-                                        text = "প্রোঃ ${farmProfile.ownerName} | মোবাইলঃ ${farmProfile.mobileNumber}",
+                                        text = "প্রো: ${farmProfile.ownerName} • মোবাইল: ${farmProfile.mobileNumber} • ঠিকানা: ${farmProfile.address}",
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             color = Color(0xFF555555),
                                             fontSize = 11.sp
-                                        ),
-                                        textAlign = TextAlign.Center
-                                    )
-                                    Text(
-                                        text = "ঠিকানাঃ ${farmProfile.address}",
-                                        style = MaterialTheme.typography.bodySmall.copy(
-                                            color = Color(0xFF555555),
-                                            fontSize = 10.sp
                                         ),
                                         textAlign = TextAlign.Center
                                     )
@@ -388,12 +382,12 @@ fun ShareholderPdfPreviewModalDialog(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Box(modifier = Modifier.width(110.dp).height(1.dp).background(Color(0xFF333333)))
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("হিসাব রক্ষক", fontSize = 11.sp, color = Color(0xFF333333), fontWeight = FontWeight.SemiBold)
+                                    Text("প্রস্তুতকারক", fontSize = 11.sp, color = Color(0xFF333333), fontWeight = FontWeight.SemiBold)
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Box(modifier = Modifier.width(110.dp).height(1.dp).background(Color(0xFF333333)))
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("মালিকের স্বাক্ষর", fontSize = 11.sp, color = Color(0xFF333333), fontWeight = FontWeight.SemiBold)
+                                    Text("অনুমোদনকারী", fontSize = 11.sp, color = Color(0xFF333333), fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
@@ -519,38 +513,185 @@ private fun generateShareholderHtml(
 
     return """
         <!DOCTYPE html>
-        <html>
+        <html lang="bn">
         <head>
             <meta charset="utf-8">
             <title>$title - $monthTagText</title>
             <style>
-                @page { size: A4 portrait; margin: 8mm 10mm 8mm 10mm; }
+                @page {
+                    size: A4 portrait;
+                    margin: 8mm 10mm 8mm 10mm;
+                }
                 *, *:before, *:after { box-sizing: border-box; }
-                body { font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif; color: #111111; margin: 0; padding: 0; font-size: 12px; }
-                .page-container { width: 100%; min-height: 275mm; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; break-after: page; box-sizing: border-box; padding-bottom: 1mm; }
-                .page-container:last-child { page-break-after: avoid; break-after: auto; }
-                .page-body { flex: 1 0 auto; width: 100%; }
-                .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0D631B; padding-top: 0; padding-bottom: 6px; margin-bottom: 8px; }
-                .header-logo { flex: 0 0 80px; text-align: left; }
-                .header-text { flex: 1 1 auto; text-align: center; }
-                .header-spacer { flex: 0 0 80px; }
-                .farm-name { font-size: 19px; font-weight: bold; color: #0D631B; margin: 0; line-height: 1.2; letter-spacing: 0.3px; }
-                .farm-sub { font-size: 11.5px; color: #222222; margin: 1px 0; font-weight: 500; line-height: 1.25; }
-                .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12.5px; font-weight: 600; }
-                .meta strong { font-size: 13px; color: #111111; }
-                .report-month-tag { font-weight: bold; color: #0D631B; background-color: #E8F5E9; padding: 2px 8px; border-radius: 4px; border: 1px solid #C8E6C9; font-size: 11.5px; display: inline-block; }
-                .meta span { color: #444444; font-size: 12px; }
-                .summary-card { background: #F4F9F5; border: 1px solid #CCE8D2; border-radius: 6px; padding: 6px 14px; margin-bottom: 6px; display: flex; justify-content: space-around; font-size: 12px; }
-                table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 4px; font-size: 11.8px; border-radius: 5px; overflow: hidden; border: 1px solid #D0D0D0; box-shadow: 0 1px 4px rgba(0,0,0,0.03); margin-bottom: 6px; }
-                th, td { border-bottom: 1px solid #E0E0E0; border-right: 1px solid #E0E0E0; padding: 4px 6px; line-height: 1.2; }
-                th:last-child, td:last-child { border-right: none; }
-                tbody tr:last-child td { border-bottom: none; }
-                th { background-color: #0D631B; color: #FFF; text-align: center; font-weight: 600; font-size: 11.8px; padding: 4px 6px; }
-                .even-row { background-color: #F4F9F5; }
-                .total-row { background-color: #E8F5E9; font-weight: bold; color: #0D631B; }
-                .total-row td { color: #0B4D16; border-top: 2px solid #0D631B; font-weight: 700; font-size: 12px; padding: 4px 6px; }
-                .signatures { display: flex; justify-content: space-between; padding: 0 30px; margin-top: 28px; margin-bottom: 2mm; page-break-inside: avoid; }
-                .sig-box { width: 130px; text-align: center; border-top: 1.5px solid #333333; padding-top: 5px; font-size: 12px; font-weight: 600; color: #222222; }
+                body {
+                    font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    color: #111111;
+                    background-color: #ffffff;
+                    font-size: 12.8px;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .page-container {
+                    width: 100%;
+                    min-height: 275mm;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    page-break-after: always;
+                    break-after: page;
+                    box-sizing: border-box;
+                    padding-bottom: 1mm;
+                }
+                .page-container:last-child {
+                    page-break-after: avoid;
+                    break-after: auto;
+                }
+                .page-body {
+                    flex: 1 0 auto;
+                    width: 100%;
+                }
+                .header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    border-bottom: 2px solid #0D631B;
+                    padding-top: 0;
+                    padding-bottom: 6px;
+                    margin-bottom: 8px;
+                }
+                .header-logo {
+                    flex: 0 0 80px;
+                    text-align: left;
+                }
+                .header-logo img {
+                    max-height: 55px;
+                    max-width: 80px;
+                    object-fit: contain;
+                    border-radius: 6px;
+                }
+                .header-text {
+                    flex: 1 1 auto;
+                    text-align: center;
+                }
+                .header-text .title {
+                    font-size: 19px;
+                    font-weight: bold;
+                    color: #0D631B;
+                    margin: 0;
+                    line-height: 1.2;
+                    letter-spacing: 0.3px;
+                }
+                .header-text .subtitle {
+                    font-size: 11.5px;
+                    color: #222222;
+                    margin: 1px 0;
+                    font-weight: 500;
+                    line-height: 1.25;
+                }
+                .header-spacer {
+                    flex: 0 0 80px;
+                }
+                .meta {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                    margin-bottom: 6px;
+                }
+                .meta-left {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 3px;
+                }
+                .meta-left .report-title {
+                    font-size: 13.5px;
+                    font-weight: bold;
+                    color: #111111;
+                }
+                .report-month-tag {
+                    font-weight: bold;
+                    color: #0D631B;
+                    background-color: #E8F5E9;
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    border: 1px solid #C8E6C9;
+                    font-size: 11.5px;
+                    display: inline-block;
+                }
+                .meta-right {
+                    color: #444444;
+                    font-size: 12px;
+                    font-weight: 600;
+                }
+                .summary-card {
+                    background: #F4F9F5;
+                    border: 1px solid #CCE8D2;
+                    border-radius: 6px;
+                    padding: 6px 14px;
+                    margin-bottom: 6px;
+                    display: flex;
+                    justify-content: space-around;
+                    font-size: 12px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: separate;
+                    border-spacing: 0;
+                    margin-top: 4px;
+                    font-size: 12.8px;
+                    border-radius: 5px;
+                    overflow: hidden;
+                    border: 1px solid #D0D0D0;
+                    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+                    margin-bottom: 6px;
+                }
+                th, td {
+                    border-bottom: 1px solid #E0E0E0;
+                    border-right: 1px solid #E0E0E0;
+                    padding: 4px 6px;
+                    line-height: 1.2;
+                }
+                th:last-child, td:last-child {
+                    border-right: none;
+                }
+                th {
+                    background-color: #0D631B !important;
+                    color: #FFFFFF !important;
+                    font-weight: 700;
+                    text-align: center;
+                    font-size: 13.8px;
+                    letter-spacing: 0.2px;
+                    padding: 4px 6px;
+                }
+                tr:nth-child(even) {
+                    background-color: #F4F9F5;
+                }
+                tr.total-row td {
+                    color: #0B4D16;
+                    border-top: 2px solid #0D631B;
+                    font-weight: 700;
+                    font-size: 13px;
+                    background-color: #E8F5E9 !important;
+                }
+                .footer-signatures {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 0 40px;
+                    margin-top: 28px;
+                    margin-bottom: 2mm;
+                    page-break-inside: avoid;
+                }
+                .sig-line {
+                    border-top: 1.5px solid #333333;
+                    width: 140px;
+                    text-align: center;
+                    padding-top: 5px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #222222;
+                }
             </style>
         </head>
         <body>
@@ -559,25 +700,25 @@ private fun generateShareholderHtml(
                     <div class="header">
                         <div class="header-logo">$logoHtml</div>
                         <div class="header-text">
-                            <div class="farm-name">${farmProfile.farmName}</div>
-                            <div class="farm-sub">লেয়ার পোল্ট্রি ফার্ম</div>
-                            <div class="farm-sub">প্রোঃ ${farmProfile.ownerName} | মোবাইলঃ ${farmProfile.mobileNumber}</div>
-                            <div class="farm-sub">ঠিকানাঃ ${farmProfile.address}</div>
+                            <h1 class="title">${farmProfile.farmName}</h1>
+                            <div class="subtitle">প্রো: ${farmProfile.ownerName} &bull; মোবাইল: ${farmProfile.mobileNumber} &bull; ঠিকানা: ${farmProfile.address}</div>
                         </div>
                         <div class="header-spacer"></div>
                     </div>
 
                     <div class="meta">
-                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
-                            <strong>$title</strong>
-                            <span class="report-month-tag">মাসঃ $monthTagText</span>
+                        <div class="meta-left">
+                            <div class="report-title">$title</div>
+                            <div class="report-month-tag">মাস: $monthTagText</div>
                         </div>
-                        <span>তারিখ: $currentDateBangla</span>
+                        <div class="meta-right">
+                            <span>তারিখ: $currentDateBangla</span>
+                        </div>
                     </div>
 
                     <div class="summary-card">
-                        <div><strong>মোট লেনদেনঃ</strong> ${BanglaNumberFormatter.formatNumber(payments.size)} বার</div>
-                        <div><strong>মোট পরিশোধিত অর্থঃ</strong> ${BanglaNumberFormatter.formatCurrency(totalAmount)}</div>
+                        <div><strong>মোট লেনদেন:</strong> ${BanglaNumberFormatter.formatNumber(payments.size)} বার</div>
+                        <div><strong>মোট পরিশোধিত অর্থ:</strong> ${BanglaNumberFormatter.formatCurrency(totalAmount)}</div>
                     </div>
 
                     <table>
@@ -602,9 +743,9 @@ private fun generateShareholderHtml(
                     </table>
                 </div>
 
-                <div class="signatures">
-                    <div class="sig-box">হিসাব রক্ষক</div>
-                    <div class="sig-box">মালিকের স্বাক্ষর</div>
+                <div class="footer-signatures">
+                    <div class="sig-line">প্রস্তুতকারক</div>
+                    <div class="sig-line">অনুমোদনকারী</div>
                 </div>
             </div>
         </body>

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -98,8 +99,8 @@ fun PdfPreviewModalDialog(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp, vertical = 10.dp)
-                .navigationBarsPadding()
+                .systemBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 8.dp)
                 .clip(RoundedCornerShape(16.dp)),
             color = MaterialTheme.colorScheme.surface
         ) {
@@ -252,18 +253,10 @@ fun PdfPreviewModalDialog(
                                         )
                                     )
                                     Text(
-                                        text = "প্রোঃ ${farmProfile.ownerName} | মোবাইলঃ ${farmProfile.mobileNumber}",
+                                        text = "প্রো: ${farmProfile.ownerName} • মোবাইল: ${farmProfile.mobileNumber} • ঠিকানা: ${farmProfile.address}",
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             color = Color(0xFF555555),
                                             fontSize = 11.sp
-                                        ),
-                                        textAlign = TextAlign.Center
-                                    )
-                                    Text(
-                                        text = "ঠিকানাঃ ${farmProfile.address}",
-                                        style = MaterialTheme.typography.bodySmall.copy(
-                                            color = Color(0xFF555555),
-                                            fontSize = 10.sp
                                         ),
                                         textAlign = TextAlign.Center
                                     )
@@ -1179,16 +1172,19 @@ fun generateHtmlContent(
                         <div class="header-logo">$logoHtml</div>
                         <div class="header-text">
                             <h1 class="title">${farmProfile.farmName}</h1>
-                            <div class="subtitle">প্রো: ${farmProfile.ownerName} &bull; মোবাইল: ${farmProfile.mobileNumber}</div>
-                            <div class="subtitle">${farmProfile.address}</div>
+                            <div class="subtitle">প্রো: ${farmProfile.ownerName} &bull; মোবাইল: ${farmProfile.mobileNumber} &bull; ঠিকানা: ${farmProfile.address}</div>
                         </div>
                         <div class="header-spacer"></div>
                     </div>
 
                     <div class="meta">
-                        <strong>$title</strong>
-                        <span class="report-month-tag">মাস: $monthLabel</span>
-                        <span>তারিখ: $currentDateStr</span>
+                        <div class="meta-left">
+                            <div class="report-title">$title</div>
+                            <div class="report-month-tag">মাস: $monthLabel</div>
+                        </div>
+                        <div class="meta-right">
+                            <span>তারিখ: $currentDateStr</span>
+                        </div>
                     </div>
 
                     <table class="$tableClass">
@@ -1202,9 +1198,8 @@ fun generateHtmlContent(
                 </div>
 
                 <div class="footer-signatures">
-                    <div class="sig-line">হিসাব রক্ষক</div>
-                    <div class="sig-line">ম্যানেজার</div>
-                    <div class="sig-line">মালিকের স্বাক্ষর</div>
+                    <div class="sig-line">প্রস্তুতকারক</div>
+                    <div class="sig-line">অনুমোদনকারী</div>
                 </div>
             </div>
         """.trimIndent())
@@ -1232,7 +1227,7 @@ fun generateHtmlContent(
                     padding: 0;
                     color: #111111;
                     background-color: #ffffff;
-                    font-size: 12px;
+                    font-size: 12.8px;
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
                 }
@@ -1317,14 +1312,20 @@ fun generateHtmlContent(
                 .meta {
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;
+                    align-items: flex-end;
                     margin-bottom: 6px;
-                    font-size: 12.5px;
-                    font-weight: 600;
                 }
 
-                .meta strong {
-                    font-size: 13px;
+                .meta-left {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 3px;
+                }
+
+                .meta-left .report-title {
+                    font-size: 13.5px;
+                    font-weight: bold;
                     color: #111111;
                 }
 
@@ -1339,9 +1340,10 @@ fun generateHtmlContent(
                     display: inline-block;
                 }
 
-                .meta span {
+                .meta-right {
                     color: #444444;
                     font-size: 12px;
+                    font-weight: 600;
                 }
 
                 /* ─── ডেটা টেবিল ─── */
@@ -1350,7 +1352,7 @@ fun generateHtmlContent(
                     border-collapse: separate;
                     border-spacing: 0;
                     margin-top: 4px;
-                    font-size: 11.8px;
+                    font-size: 12.8px;
                     border-radius: 5px;
                     overflow: hidden;
                     border: 1px solid #D0D0D0;
@@ -1368,12 +1370,13 @@ fun generateHtmlContent(
                 table.table-standard th, table.table-standard td {
                     padding: 3.2px 6px;
                     line-height: 1.18;
+                    font-size: 12.8px;
                 }
 
                 table.table-spacious th, table.table-spacious td {
                     padding: 5.5px 7.5px;
                     line-height: 1.25;
-                    font-size: 12px;
+                    font-size: 12.8px;
                 }
 
                 th:last-child, td:last-child {
@@ -1387,9 +1390,9 @@ fun generateHtmlContent(
                 th {
                     background-color: #0D631B !important;
                     color: #FFFFFF !important;
-                    font-weight: 600;
+                    font-weight: 700;
                     text-align: center;
-                    font-size: 11.8px;
+                    font-size: 13.8px;
                     letter-spacing: 0.2px;
                     padding: 4px 6px;
                 }
@@ -1411,7 +1414,7 @@ fun generateHtmlContent(
                     color: #0B4D16;
                     border-top: 2px solid #0D631B;
                     font-weight: 700;
-                    font-size: 12px;
+                    font-size: 13px;
                     padding: 4px 6px;
                 }
 
@@ -1419,7 +1422,7 @@ fun generateHtmlContent(
                 .footer-signatures {
                     display: flex;
                     justify-content: space-between;
-                    padding: 0 30px;
+                    padding: 0 40px;
                     margin-top: 24px;
                     margin-bottom: 2mm;
                     page-break-inside: avoid;
@@ -1427,7 +1430,7 @@ fun generateHtmlContent(
 
                 .sig-line {
                     border-top: 1.5px solid #333333;
-                    width: 130px;
+                    width: 140px;
                     text-align: center;
                     padding-top: 5px;
                     font-size: 12px;

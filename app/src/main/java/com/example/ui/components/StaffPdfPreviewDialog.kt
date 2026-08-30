@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -96,8 +97,8 @@ fun StaffPdfPreviewModalDialog(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp, vertical = 10.dp)
-                .navigationBarsPadding()
+                .systemBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 8.dp)
                 .clip(RoundedCornerShape(16.dp)),
             color = MaterialTheme.colorScheme.surface
         ) {
@@ -231,20 +232,26 @@ fun StaffPdfPreviewModalDialog(
                                 ) {
                                     Text(
                                         text = farmProfile.farmName,
-                                        style = MaterialTheme.typography.titleLarge.copy(
+                                        style = MaterialTheme.typography.headlineSmall.copy(
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF0D631B)
+                                            color = Color(0xFF0D631B),
+                                            fontSize = 20.sp
                                         ),
                                         textAlign = TextAlign.Center
                                     )
                                     Text(
-                                        text = "প্রো: ${farmProfile.ownerName}  •  মোবাইল: ${BanglaNumberFormatter.toBanglaDigits(farmProfile.mobileNumber)}",
-                                        style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF333333)),
-                                        textAlign = TextAlign.Center
+                                        text = "লেয়ার পোল্ট্রি ফার্ম",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = Color(0xFF333333),
+                                            fontWeight = FontWeight.Medium
+                                        )
                                     )
                                     Text(
-                                        text = farmProfile.address,
-                                        style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF444444)),
+                                        text = "প্রো: ${farmProfile.ownerName} • মোবাইল: ${farmProfile.mobileNumber} • ঠিকানা: ${farmProfile.address}",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = Color(0xFF555555),
+                                            fontSize = 11.sp
+                                        ),
                                         textAlign = TextAlign.Center
                                     )
                                 }
@@ -324,7 +331,7 @@ fun StaffPdfPreviewModalDialog(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Box(modifier = Modifier.width(110.dp).height(1.dp).background(Color.Black))
                                     Text(
-                                        text = "ম্যানেজার",
+                                        text = "প্রস্তুতকারক",
                                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                                         modifier = Modifier.padding(top = 4.dp)
                                     )
@@ -541,7 +548,7 @@ fun generateStaffHtml(
                     padding: 0;
                     color: #111111;
                     background-color: #ffffff;
-                    font-size: 12px;
+                    font-size: 12.8px;
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
                 }
@@ -624,14 +631,20 @@ fun generateStaffHtml(
                 .meta {
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;
+                    align-items: flex-end;
                     margin-bottom: 6px;
-                    font-size: 12.5px;
-                    font-weight: 600;
                 }
 
-                .meta strong {
-                    font-size: 13px;
+                .meta-left {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 3px;
+                }
+
+                .meta-left .report-title {
+                    font-size: 13.5px;
+                    font-weight: bold;
                     color: #111111;
                 }
 
@@ -646,9 +659,10 @@ fun generateStaffHtml(
                     display: inline-block;
                 }
 
-                .meta span {
+                .meta-right {
                     color: #444444;
                     font-size: 12px;
+                    font-weight: 600;
                 }
 
                 .summary-card {
@@ -667,7 +681,7 @@ fun generateStaffHtml(
                     border-collapse: separate;
                     border-spacing: 0;
                     margin-top: 4px;
-                    font-size: 11.8px;
+                    font-size: 12.8px;
                     border-radius: 5px;
                     overflow: hidden;
                     border: 1px solid #D0D0D0;
@@ -695,9 +709,9 @@ fun generateStaffHtml(
                 th {
                     background-color: #0D631B !important;
                     color: #FFFFFF !important;
-                    font-weight: 600;
+                    font-weight: 700;
                     text-align: center;
-                    font-size: 11.8px;
+                    font-size: 13.8px;
                     letter-spacing: 0.2px;
                     padding: 4px 6px;
                 }
@@ -719,14 +733,14 @@ fun generateStaffHtml(
                     color: #0B4D16;
                     border-top: 2px solid #0D631B;
                     font-weight: 700;
-                    font-size: 12px;
+                    font-size: 13px;
                     padding: 4px 6px;
                 }
 
                 .footer-signatures {
                     display: flex;
                     justify-content: space-between;
-                    padding: 0 30px;
+                    padding: 0 40px;
                     margin-top: 28px;
                     margin-bottom: 2mm;
                     page-break-inside: avoid;
@@ -734,7 +748,7 @@ fun generateStaffHtml(
 
                 .sig-line {
                     border-top: 1.5px solid #333333;
-                    width: 130px;
+                    width: 140px;
                     text-align: center;
                     padding-top: 5px;
                     font-size: 12px;
@@ -750,16 +764,19 @@ fun generateStaffHtml(
                         <div class="header-logo">$logoHtml</div>
                         <div class="header-text">
                             <h1 class="title">${farmProfile.farmName}</h1>
-                            <div class="subtitle">প্রো: ${farmProfile.ownerName} &bull; মোবাইল: ${farmProfile.mobileNumber}</div>
-                            <div class="subtitle">${farmProfile.address}</div>
+                            <div class="subtitle">প্রো: ${farmProfile.ownerName} &bull; মোবাইল: ${farmProfile.mobileNumber} &bull; ঠিকানা: ${farmProfile.address}</div>
                         </div>
                         <div class="header-spacer"></div>
                     </div>
 
                     <div class="meta">
-                        <strong>$title</strong>
-                        <span class="report-month-tag">মাস: $monthTagText</span>
-                        <span>তারিখ: $currentDateStr</span>
+                        <div class="meta-left">
+                            <div class="report-title">$title</div>
+                            <div class="report-month-tag">মাস: $monthTagText</div>
+                        </div>
+                        <div class="meta-right">
+                            <span>তারিখ: $currentDateStr</span>
+                        </div>
                     </div>
 
                     <div class="summary-card">
@@ -784,11 +801,12 @@ fun generateStaffHtml(
                 </div>
 
                 <div class="footer-signatures">
-                    <div class="sig-line">হিসাব রক্ষক</div>
-                    <div class="sig-line">মালিকের স্বাক্ষর</div>
+                    <div class="sig-line">প্রস্তুতকারক</div>
+                    <div class="sig-line">অনুমোদনকারী</div>
                 </div>
             </div>
         </body>
         </html>
     """.trimIndent()
 }
+

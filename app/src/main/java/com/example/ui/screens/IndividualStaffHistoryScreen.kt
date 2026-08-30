@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -222,14 +223,119 @@ fun IndividualStaffHistoryScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
-                .padding(horizontal = 14.dp)
+                .padding(horizontal = 16.dp)
                 .testTag("individual_staff_history_screen"),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Spacer(modifier = Modifier.height(2.dp))
 
             // ══════════════════════════════════════════════════════════════
-            // Top Controls: Month Selector & Search
+            // Profile Header (Avatar + Name)
+            // ══════════════════════════════════════════════════════════════
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                val initialLetter = remember(resolvedName) {
+                    if (resolvedName.isNotBlank()) resolvedName.take(2) else "স্টা"
+                }
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = initialLetter,
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = resolvedName,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    )
+                }
+            }
+
+            // ══════════════════════════════════════════════════════════════
+            // Bento Grid Summary Cards (Total Payments Count & Total Amount)
+            // ══════════════════════════════════════════════════════════════
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Total Payments Count Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceVariant),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp)
+                    ) {
+                        Text(
+                            text = "মোট পেমেন্ট",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "${BanglaNumberFormatter.formatNumber(totalCount)} টি",
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
+                    }
+                }
+
+                // Total Amount Paid Card
+                Card(
+                    modifier = Modifier.weight(1.2f),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp)
+                    ) {
+                        Text(
+                            text = "মোট দেওয়া হয়েছে",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = BanglaNumberFormatter.formatCurrency(totalAmount),
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        )
+                    }
+                }
+            }
+
+            // ══════════════════════════════════════════════════════════════
+            // Filter Controls (Month Selector & Search)
             // ══════════════════════════════════════════════════════════════
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -340,71 +446,26 @@ fun IndividualStaffHistoryScreen(
             )
 
             // ══════════════════════════════════════════════════════════════
-            // Summary Cards: Total Payments, Total Paid
+            // History Section Header & Table ("বিস্তারিত লেনদেন")
             // ══════════════════════════════════════════════════════════════
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Card(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color(0xFF0288D1), modifier = Modifier.size(14.dp))
-                            Text("মোট পেমেন্ট", style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "${BanglaNumberFormatter.formatNumber(totalCount)} বার",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color(0xFF0288D1))
-                        )
-                    }
-                }
+            Text(
+                text = "বিস্তারিত লেনদেন",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                modifier = Modifier.padding(start = 2.dp)
+            )
 
-                Card(
-                    modifier = Modifier.weight(1.3f),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color(0xFF0D631B), modifier = Modifier.size(14.dp))
-                            Text("মোট দেওয়া হয়েছে", style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = BanglaNumberFormatter.formatCurrency(totalAmount),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color(0xFF0D631B))
-                        )
-                    }
-                }
-            }
-
-            // ══════════════════════════════════════════════════════════════
-            // History Table
-            // ══════════════════════════════════════════════════════════════
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
                 border = androidx.compose.foundation.BorderStroke(
                     1.dp,
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    MaterialTheme.colorScheme.outlineVariant
                 )
             ) {
                 if (filteredPayments.isEmpty()) {
@@ -445,49 +506,49 @@ fun IndividualStaffHistoryScreen(
                         // Header
                         Row(
                             modifier = Modifier
-                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
+                                .background(MaterialTheme.colorScheme.surfaceContainer)
                                 .padding(vertical = 10.dp, horizontal = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = "তারিখ",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.width(90.dp),
                                 textAlign = TextAlign.Center
                             )
                             Text(
                                 text = "পরিমাণ",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.width(110.dp),
                                 textAlign = TextAlign.End
                             )
                             Text(
-                                text = "পেমেন্ট মাধ্যম",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                text = "মাধ্যম",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.width(100.dp),
                                 textAlign = TextAlign.Center
                             )
                             Text(
                                 text = "নোট",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.width(140.dp)
                             )
                             if (isAdmin) {
                                 Text(
                                     text = "অ্যাকশন",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.width(80.dp),
                                     textAlign = TextAlign.Center
                                 )
                             }
                         }
 
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                         filteredPayments.forEachIndexed { index, payment ->
                             val rowBg = if (index % 2 == 0) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerLowest
