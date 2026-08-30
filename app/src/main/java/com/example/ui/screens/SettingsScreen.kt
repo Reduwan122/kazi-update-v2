@@ -94,6 +94,7 @@ fun SettingsScreen(
     onNavigateToAdmin: () -> Unit = {},
     onNavigateToRolePermissions: (String) -> Unit = {},
     onNavigateToShareholderSettings: () -> Unit = {},
+    onNavigateToStaffSettings: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToBackupRestore: () -> Unit = {},
     onOpenNotifications: () -> Unit = {},
@@ -648,6 +649,15 @@ fun SettingsScreen(
                             title = "শেয়ারহোল্ডার সেটিংস",
                             subtitle = "শেয়ারহোল্ডার তালিকা ও ব্যবস্থাপনা",
                             onClick = onNavigateToShareholderSettings
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        SettingsRowItem(
+                            icon = Icons.Default.Person,
+                            title = "স্টাফ সেটিংস",
+                            subtitle = "খামারের স্টাফ তালিকা ও ব্যবস্থাপনা",
+                            onClick = onNavigateToStaffSettings
                         )
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))

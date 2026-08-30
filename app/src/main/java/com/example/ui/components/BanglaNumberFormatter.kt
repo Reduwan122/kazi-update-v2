@@ -125,4 +125,12 @@ object BanglaNumberFormatter {
             toBanglaDigits(yearMonth)
         }
     }
+
+    fun getCurrentDateBangla(): String {
+        return formatBanglaDate(getCurrentDateFormatted())
+    }
+
+    fun convertBanglaToEnglishDigits(numberStr: String): String {
+        return toEnglishDigits(numberStr)
+    }
 }

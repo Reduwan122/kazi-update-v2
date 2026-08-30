@@ -11,6 +11,8 @@ import com.example.data.local.MonthlyExpenseEntity
 import com.example.data.local.RolePermissionConfig
 import com.example.data.local.ShareholderEntity
 import com.example.data.local.ShareholderPaymentEntity
+import com.example.data.local.StaffEntity
+import com.example.data.local.StaffPaymentEntity
 import com.example.data.local.UserEntity
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -127,6 +129,8 @@ class GoogleSheetsBackupManager(private val context: Context) {
         rolePermissions: Map<String, RolePermissionConfig>,
         shareholders: List<ShareholderEntity> = emptyList(),
         shareholderPayments: List<ShareholderPaymentEntity> = emptyList(),
+        staff: List<StaffEntity> = emptyList(),
+        staffPayments: List<StaffPaymentEntity> = emptyList(),
         userId: String = "",
         userEmail: String = ""
     ): Result<SheetsBackupResponse> = withContext(Dispatchers.IO) {
@@ -156,9 +160,15 @@ class GoogleSheetsBackupManager(private val context: Context) {
             val requestId = java.util.UUID.randomUUID().toString()
             val token = getApiToken()
 
+            // Ensure daily reports and monthly expenses are sorted chronologically ascending (top-to-bottom: Day 1 at Row 2, Day 2 at Row 3... Day 31)
+            val sortedDailyReports = dailyReports.sortedBy { it.date }
+            val sortedMonthlyExpenses = monthlyExpenses.sortedBy { it.date }
+            val sortedStaffPayments = staffPayments.sortedBy { it.date }
+            val sortedShareholderPayments = shareholderPayments.sortedBy { it.date }
+
             val payload = SheetsBackupPayload(
                 backupSchemaVersion = 1,
-                appVersion = "1.0.0",
+                appVersion = "2.5.0",
                 appName = "Kazi Agrotech",
                 timestamp = nowTime,
                 requestId = requestId,
@@ -168,12 +178,14 @@ class GoogleSheetsBackupManager(private val context: Context) {
                 apiToken = token,
                 data = SheetsBackupData(
                     farmProfile = farmProfile,
-                    dailyReports = dailyReports,
-                    monthlyExpenses = monthlyExpenses,
+                    dailyReports = sortedDailyReports,
+                    monthlyExpenses = sortedMonthlyExpenses,
                     users = users,
                     rolePermissions = rolePermissions,
-                    shareholders = shareholders,
-                    shareholderPayments = shareholderPayments
+                    shareholders = shareholders.sortedBy { it.name },
+                    shareholderPayments = sortedShareholderPayments,
+                    staff = staff.sortedBy { it.name },
+                    staffPayments = sortedStaffPayments
                 )
             )
 

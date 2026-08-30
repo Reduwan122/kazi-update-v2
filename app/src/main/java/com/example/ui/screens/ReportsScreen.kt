@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Egg
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Paid
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Share
@@ -88,7 +90,8 @@ fun ReportsScreen(
     viewModel: PoultryViewModel,
     onOpenNotifications: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
-    onNavigateToShareholderPayments: () -> Unit = {}
+    onNavigateToShareholderPayments: () -> Unit = {},
+    onNavigateToStaffPayments: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val haptics = rememberHaptics()
@@ -475,6 +478,68 @@ fun ReportsScreen(
                                 )
                                 Text(
                                     text = "শেয়ারহোল্ডার পেমেন্ট হিস্টোরি ও রিপোর্ট",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                // Staff Payments Report Entry
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable {
+                            haptics.tap()
+                            onNavigateToStaffPayments()
+                        }
+                        .testTag("card_staff_payments_report"),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFE8F5E9)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Payments,
+                                    contentDescription = null,
+                                    tint = Color(0xFF0D631B),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Column {
+                                Text(
+                                    text = "সকল স্টাফ পেমেন্ট",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "স্টাফ পেমেন্ট হিস্টোরি ও রিপোর্ট",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

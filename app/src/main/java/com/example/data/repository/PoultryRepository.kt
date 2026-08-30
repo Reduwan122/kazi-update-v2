@@ -10,6 +10,8 @@ import com.example.data.local.MonthlyExpenseEntity
 import com.example.data.local.RolePermissionConfig
 import com.example.data.local.ShareholderEntity
 import com.example.data.local.ShareholderPaymentEntity
+import com.example.data.local.StaffEntity
+import com.example.data.local.StaffPaymentEntity
 import com.example.data.local.UserEntity
 import com.example.domain.StockCalculationService
 import com.google.firebase.auth.FirebaseAuth
@@ -134,6 +136,12 @@ class PoultryRepository(
 
     private val _allShareholderPayments = MutableStateFlow<List<ShareholderPaymentEntity>>(emptyList())
     val allShareholderPayments: Flow<List<ShareholderPaymentEntity>> = _allShareholderPayments.asStateFlow()
+
+    private val _allStaff = MutableStateFlow<List<StaffEntity>>(emptyList())
+    val allStaff: Flow<List<StaffEntity>> = _allStaff.asStateFlow()
+
+    private val _allStaffPayments = MutableStateFlow<List<StaffPaymentEntity>>(emptyList())
+    val allStaffPayments: Flow<List<StaffPaymentEntity>> = _allStaffPayments.asStateFlow()
 
     init {
         checkCurrentAuthSession()
@@ -581,6 +589,98 @@ class PoultryRepository(
 
                 override fun onCancelled(error: DatabaseError) {
                     Log.e(TAG, "shareholder_payments listener cancelled: ${error.message}")
+                }
+            })
+
+            // Listen to Staff in Firebase
+            reference.child("staff").addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val list = mutableListOf<StaffEntity>()
+                    if (snapshot.exists() && snapshot.hasChildren()) {
+                        for (child in snapshot.children) {
+                            try {
+                                val keyId = child.key ?: ""
+                                val name = child.child("name").getValue(String::class.java) ?: ""
+                                val phone = child.child("phone").getValue(String::class.java) ?: ""
+                                val createdAt = child.child("createdAt").getValue(Long::class.java) ?: System.currentTimeMillis()
+                                var s: StaffEntity? = null
+                                try {
+                                    s = child.getValue(StaffEntity::class.java)
+                                } catch (e: Throwable) {
+                                    Log.w(TAG, "Direct parsing failed for staff: ${e.message}")
+                                }
+                                if (s == null || s.id.isBlank() || s.name.isBlank()) {
+                                    s = StaffEntity(id = keyId, name = name, phone = phone, createdAt = createdAt)
+                                } else if (s.id.isBlank()) {
+                                    s = s.copy(id = keyId)
+                                }
+                                if (s.name.isNotBlank()) {
+                                    list.add(s)
+                                }
+                            } catch (e: Throwable) {
+                                Log.w(TAG, "Error parsing staff: ${e.message}")
+                            }
+                        }
+                    }
+                    _allStaff.value = list.distinctBy { it.id }.sortedBy { it.name }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(TAG, "staff listener cancelled: ${error.message}")
+                }
+            })
+
+            // Listen to Staff Payments in Firebase
+            reference.child("staff_payments").addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val list = mutableListOf<StaffPaymentEntity>()
+                    if (snapshot.exists() && snapshot.hasChildren()) {
+                        for (child in snapshot.children) {
+                            try {
+                                val keyId = child.key ?: ""
+                                var p: StaffPaymentEntity? = null
+                                try {
+                                    p = child.getValue(StaffPaymentEntity::class.java)
+                                } catch (e: Throwable) {
+                                    Log.w(TAG, "Direct parsing failed for staff payment: ${e.message}")
+                                }
+                                if (p == null || p.id.isBlank()) {
+                                    val sId = child.child("staffId").getValue(String::class.java) ?: ""
+                                    val sName = child.child("staffName").getValue(String::class.java) ?: ""
+                                    val date = child.child("date").getValue(String::class.java) ?: ""
+                                    val amount = (child.child("amount").getValue(Double::class.java))
+                                        ?: (child.child("amount").getValue(Long::class.java)?.toDouble()) ?: 0.0
+                                    val method = child.child("paymentMethod").getValue(String::class.java) ?: "Cash"
+                                    val note = child.child("note").getValue(String::class.java) ?: ""
+                                    val createdAt = child.child("createdAt").getValue(Long::class.java) ?: System.currentTimeMillis()
+                                    val updatedAt = child.child("updatedAt").getValue(Long::class.java) ?: createdAt
+                                    p = StaffPaymentEntity(
+                                        id = keyId,
+                                        staffId = sId,
+                                        staffName = sName,
+                                        date = date,
+                                        amount = amount,
+                                        paymentMethod = method,
+                                        note = note,
+                                        createdAt = createdAt,
+                                        updatedAt = updatedAt
+                                    )
+                                } else if (p.id.isBlank()) {
+                                    p = p.copy(id = keyId)
+                                }
+                                if (p.staffName.isNotBlank() || p.staffId.isNotBlank()) {
+                                    list.add(p)
+                                }
+                            } catch (e: Throwable) {
+                                Log.w(TAG, "Error parsing staff payment: ${e.message}")
+                            }
+                        }
+                    }
+                    _allStaffPayments.value = list.distinctBy { it.id }.sortedByDescending { it.createdAt }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(TAG, "staff_payments listener cancelled: ${error.message}")
                 }
             })
         } catch (e: Exception) {
@@ -1300,6 +1400,182 @@ class PoultryRepository(
     }
 
     // -------------------------------------------------------------
+    // STAFF CRUD OPERATIONS
+    // -------------------------------------------------------------
+
+    suspend fun addStaff(
+        name: String,
+        phone: String,
+        onSuccess: (StaffEntity) -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        val trimmedName = name.trim()
+        val trimmedPhone = phone.trim()
+        if (trimmedName.isBlank()) {
+            withContext(Dispatchers.Main) { onError("স্টাফের নাম লিখুন") }
+            return@withContext
+        }
+        if (trimmedPhone.isBlank()) {
+            withContext(Dispatchers.Main) { onError("মোবাইল নম্বর লিখুন") }
+            return@withContext
+        }
+
+        val id = dbRef?.child("staff")?.push()?.key ?: System.currentTimeMillis().toString()
+        val staff = StaffEntity(id = id, name = trimmedName, phone = trimmedPhone, createdAt = System.currentTimeMillis())
+
+        try {
+            dbRef?.child("staff")?.child(id)?.setValue(staff)?.await()
+            val currentList = _allStaff.value.filter { it.id != id }
+            _allStaff.value = (currentList + staff).distinctBy { it.id }.sortedBy { it.name }
+            withContext(Dispatchers.Main) { onSuccess(staff) }
+        } catch (e: Throwable) {
+            Log.e(TAG, "Error saving staff: ${e.message}", e)
+            withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "স্টাফ সংরক্ষণ করা সম্ভব হয়নি") }
+        }
+    }
+
+    suspend fun updateStaff(
+        id: String,
+        name: String,
+        phone: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        val trimmedName = name.trim()
+        val trimmedPhone = phone.trim()
+        if (trimmedName.isBlank()) {
+            withContext(Dispatchers.Main) { onError("স্টাফের নাম লিখুন") }
+            return@withContext
+        }
+        if (trimmedPhone.isBlank()) {
+            withContext(Dispatchers.Main) { onError("মোবাইল নম্বর লিখুন") }
+            return@withContext
+        }
+
+        try {
+            val current = _allStaff.value.find { it.id == id } ?: StaffEntity(id = id, name = trimmedName, phone = trimmedPhone)
+            val updated = current.copy(name = trimmedName, phone = trimmedPhone)
+            dbRef?.child("staff")?.child(id)?.setValue(updated)?.await()
+
+            // Also update staffName in all payments associated with this staff
+            val affectedPayments = _allStaffPayments.value.filter { it.staffId == id }
+            if (affectedPayments.isNotEmpty()) {
+                val updates = mutableMapOf<String, Any>()
+                affectedPayments.forEach { payment ->
+                    updates["staff_payments/${payment.id}/staffName"] = trimmedName
+                }
+                dbRef?.updateChildren(updates)?.await()
+            }
+
+            val updatedList = _allStaff.value.map { if (it.id == id) updated else it }.distinctBy { it.id }.sortedBy { it.name }
+            _allStaff.value = updatedList
+            withContext(Dispatchers.Main) { onSuccess() }
+        } catch (e: Throwable) {
+            Log.e(TAG, "Error updating staff: ${e.message}", e)
+            withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "স্টাফের তথ্য পরিবর্তন করা সম্ভব হয়নি") }
+        }
+    }
+
+    suspend fun deleteStaff(
+        id: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        try {
+            dbRef?.child("staff")?.child(id)?.removeValue()?.await()
+            val updatedList = _allStaff.value.filter { it.id != id }
+            _allStaff.value = updatedList
+            withContext(Dispatchers.Main) { onSuccess() }
+        } catch (e: Throwable) {
+            Log.e(TAG, "Error deleting staff: ${e.message}", e)
+            withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "স্টাফ মুছে ফেলা সম্ভব হয়নি") }
+        }
+    }
+
+    // -------------------------------------------------------------
+    // STAFF PAYMENT CRUD OPERATIONS
+    // -------------------------------------------------------------
+
+    suspend fun addStaffPayment(
+        payment: StaffPaymentEntity,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        if (payment.staffName.isBlank()) {
+            withContext(Dispatchers.Main) { onError("স্টাফের নাম নির্বাচন করুন") }
+            return@withContext
+        }
+        if (payment.amount <= 0) {
+            withContext(Dispatchers.Main) { onError("সঠিক টাকার পরিমাণ দিন") }
+            return@withContext
+        }
+        if (payment.date.isBlank()) {
+            withContext(Dispatchers.Main) { onError("তারিখ নির্বাচন করুন") }
+            return@withContext
+        }
+
+        val id = if (payment.id.isNotBlank()) payment.id else (dbRef?.child("staff_payments")?.push()?.key ?: System.currentTimeMillis().toString())
+        val newPayment = payment.copy(id = id, createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis())
+
+        try {
+            dbRef?.child("staff_payments")?.child(id)?.setValue(newPayment)?.await()
+            val currentList = _allStaffPayments.value.filter { it.id != id }
+            _allStaffPayments.value = (listOf(newPayment) + currentList).distinctBy { it.id }.sortedByDescending { it.createdAt }
+            withContext(Dispatchers.Main) { onSuccess() }
+        } catch (e: Throwable) {
+            Log.e(TAG, "Error saving staff payment: ${e.message}", e)
+            withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "স্টাফ পেমেন্ট সংরক্ষণ করা সম্ভব হয়নি") }
+        }
+    }
+
+    suspend fun updateStaffPayment(
+        payment: StaffPaymentEntity,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        if (payment.staffName.isBlank()) {
+            withContext(Dispatchers.Main) { onError("স্টাফের নাম নির্বাচন করুন") }
+            return@withContext
+        }
+        if (payment.amount <= 0) {
+            withContext(Dispatchers.Main) { onError("সঠিক টাকার পরিমাণ দিন") }
+            return@withContext
+        }
+        if (payment.date.isBlank()) {
+            withContext(Dispatchers.Main) { onError("তারিখ নির্বাচন করুন") }
+            return@withContext
+        }
+
+        val updatedPayment = payment.copy(updatedAt = System.currentTimeMillis())
+
+        try {
+            dbRef?.child("staff_payments")?.child(payment.id)?.setValue(updatedPayment)?.await()
+            val updatedList = _allStaffPayments.value.map { if (it.id == payment.id) updatedPayment else it }.distinctBy { it.id }.sortedByDescending { it.createdAt }
+            _allStaffPayments.value = updatedList
+            withContext(Dispatchers.Main) { onSuccess() }
+        } catch (e: Throwable) {
+            Log.e(TAG, "Error updating staff payment: ${e.message}", e)
+            withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "স্টাফ পেমেন্ট পরিবর্তন করা সম্ভব হয়নি") }
+        }
+    }
+
+    suspend fun deleteStaffPayment(
+        id: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        try {
+            dbRef?.child("staff_payments")?.child(id)?.removeValue()?.await()
+            val updatedList = _allStaffPayments.value.filter { it.id != id }
+            _allStaffPayments.value = updatedList
+            withContext(Dispatchers.Main) { onSuccess() }
+        } catch (e: Throwable) {
+            Log.e(TAG, "Error deleting staff payment: ${e.message}", e)
+            withContext(Dispatchers.Main) { onError(e.localizedMessage ?: "স্টাফ পেমেন্ট মুছে ফেলা সম্ভব হয়নি") }
+        }
+    }
+
+    // -------------------------------------------------------------
     // RESTORE & BACKUP
     // -------------------------------------------------------------
 
@@ -1345,6 +1621,16 @@ class PoultryRepository(
             updates["shareholder_payments"] = content.shareholderPayments.associateBy { it.id }
         }
 
+        // Staff
+        if (content.staff.isNotEmpty()) {
+            updates["staff"] = content.staff.associateBy { it.id }
+        }
+
+        // Staff Payments
+        if (content.staffPayments.isNotEmpty()) {
+            updates["staff_payments"] = content.staffPayments.associateBy { it.id }
+        }
+
         reference.updateChildren(updates).await()
 
         // 3. Update local state flows
@@ -1363,6 +1649,12 @@ class PoultryRepository(
         }
         if (content.shareholderPayments.isNotEmpty()) {
             _allShareholderPayments.value = content.shareholderPayments.sortedByDescending { it.createdAt }
+        }
+        if (content.staff.isNotEmpty()) {
+            _allStaff.value = content.staff.sortedBy { it.name }
+        }
+        if (content.staffPayments.isNotEmpty()) {
+            _allStaffPayments.value = content.staffPayments.sortedByDescending { it.createdAt }
         }
     }
 }

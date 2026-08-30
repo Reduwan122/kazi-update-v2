@@ -148,6 +148,16 @@ function doPost(e) {
       processedCount += syncShareholderPayments(ss, data.shareholder_payments);
     }
 
+    // H. Sync Staff (Upsert)
+    if (data.staff && Array.isArray(data.staff)) {
+      processedCount += syncStaff(ss, data.staff);
+    }
+
+    // I. Sync Staff Payments (Upsert)
+    if (data.staff_payments && Array.isArray(data.staff_payments)) {
+      processedCount += syncStaffPayments(ss, data.staff_payments);
+    }
+
     // 9. Log Activity (Securely without logging tokens or personal payload)
     logBackupActivity(ss, payload, processedCount, "SUCCESS", "ক্লাউড ব্যাকআপ সফল হয়েছে");
 
@@ -489,6 +499,82 @@ function syncShareholderPayments(ss, list) {
       idStr,
       sanitizeString(p.shareholderId || ""),
       sanitizeString(p.shareholderName || ""),
+      sanitizeString(p.date || ""),
+      Number(p.amount) || 0,
+      sanitizeString(p.paymentMethod || "Cash"),
+      sanitizeString(p.note || ""),
+      createdDate,
+      now
+    ];
+
+    if (existingMap[idStr]) {
+      sheet.getRange(existingMap[idStr], 1, 1, rowValues.length).setValues([rowValues]);
+    } else {
+      appendRows.push(rowValues);
+    }
+  });
+
+  if (appendRows.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, appendRows.length, appendRows[0].length).setValues(appendRows);
+  }
+  return list.length;
+}
+
+function syncStaff(ss, list) {
+  if (!list || list.length === 0) return 0;
+  var headers = ["Staff ID (আইডি)", "Staff Name (নাম)", "Mobile (মোবাইল)", "Created Date", "Last Synced"];
+  var sheet = getOrCreateSheet(ss, "Staff (স্টাফ তালিকা)", headers);
+  var existingMap = getRowIndexMap(sheet, 1);
+  var now = new Date();
+  var appendRows = [];
+
+  list.forEach(function(s) {
+    var idStr = String(s.id || "").trim();
+    if (!idStr) return;
+
+    var createdDate = s.createdAt ? new Date(Number(s.createdAt)) : now;
+    var rowValues = [
+      idStr,
+      sanitizeString(s.name || ""),
+      sanitizeString(s.phone || ""),
+      createdDate,
+      now
+    ];
+
+    if (existingMap[idStr]) {
+      sheet.getRange(existingMap[idStr], 1, 1, rowValues.length).setValues([rowValues]);
+    } else {
+      appendRows.push(rowValues);
+    }
+  });
+
+  if (appendRows.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, appendRows.length, appendRows[0].length).setValues(appendRows);
+  }
+  return list.length;
+}
+
+function syncStaffPayments(ss, list) {
+  if (!list || list.length === 0) return 0;
+  var headers = [
+    "Payment ID (আইডি)", "Staff ID", "Staff Name (নাম)",
+    "Date (তারিখ)", "Amount (টাকার পরিমাণ ৳)", "Payment Method (মাধ্যম)",
+    "Note (মন্তব্য)", "Created Date", "Last Synced"
+  ];
+  var sheet = getOrCreateSheet(ss, "Staff Payments (স্টাফ পেমেন্ট)", headers);
+  var existingMap = getRowIndexMap(sheet, 1);
+  var now = new Date();
+  var appendRows = [];
+
+  list.forEach(function(p) {
+    var idStr = String(p.id || "").trim();
+    if (!idStr) return;
+
+    var createdDate = p.createdAt ? new Date(Number(p.createdAt)) : now;
+    var rowValues = [
+      idStr,
+      sanitizeString(p.staffId || ""),
+      sanitizeString(p.staffName || ""),
       sanitizeString(p.date || ""),
       Number(p.amount) || 0,
       sanitizeString(p.paymentMethod || "Cash"),
