@@ -459,135 +459,165 @@ fun IndividualShareholderHistoryScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
                 ) {
                     val hScrollState = rememberScrollState()
-                    Box(modifier = Modifier.fillMaxWidth().horizontalScroll(hScrollState)) {
-                        Column(modifier = Modifier.width(580.dp)) {
-                            // Header
+                    Column(modifier = Modifier.fillMaxWidth().horizontalScroll(hScrollState)) {
+                        // Header
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "তারিখ",
+                                modifier = Modifier.width(95.dp).padding(start = 14.dp),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Start
+                            )
+                            Text(
+                                text = "পরিমাণ (৳)",
+                                modifier = Modifier.width(115.dp),
+                                textAlign = TextAlign.End,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "মাধ্যম",
+                                modifier = Modifier.width(100.dp),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "নোট",
+                                modifier = Modifier.width(150.dp).padding(horizontal = 6.dp),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Start
+                            )
+                            if (isAdmin) {
+                                Text(
+                                    text = "অ্যাকশন",
+                                    modifier = Modifier.width(80.dp).padding(end = 14.dp),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                        // Rows
+                        filteredPayments.forEachIndexed { index, payment ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    .background(if (index % 2 == 1) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.3f) else Color.Transparent)
+                                    .padding(vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("তারিখ", modifier = Modifier.weight(1.4f), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("পরিমাণ (৳)", modifier = Modifier.weight(1.5f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("মাধ্যম", modifier = Modifier.weight(1.2f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("নোট", modifier = Modifier.weight(1.8f), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                if (isAdmin) {
-                                    Text("অ্যাকশন", modifier = Modifier.weight(1.1f), textAlign = TextAlign.End, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                // Date
+                                val formattedDateDisplay = if (payment.date.contains("-")) {
+                                    BanglaNumberFormatter.formatShortDate(payment.date)
+                                } else {
+                                    BanglaNumberFormatter.toBanglaDigits(payment.date)
                                 }
-                            }
+                                Text(
+                                    text = formattedDateDisplay,
+                                    modifier = Modifier.width(95.dp).padding(start = 14.dp),
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.Start
+                                )
 
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                // Amount
+                                Text(
+                                    text = BanglaNumberFormatter.formatCurrency(payment.amount),
+                                    modifier = Modifier.width(115.dp),
+                                    textAlign = TextAlign.End,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                )
 
-                            // Rows
-                            filteredPayments.forEachIndexed { index, payment ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(if (index % 2 == 1) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.3f) else Color.Transparent)
-                                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                // Method
+                                val methodLabel = when (payment.paymentMethod.lowercase()) {
+                                    "cash" -> "ক্যাশ"
+                                    "bank" -> "ব্যাংক"
+                                    "bkash" -> "বিকাশ"
+                                    else -> payment.paymentMethod
+                                }
+                                Box(
+                                    modifier = Modifier.width(100.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    // Date
-                                    val formattedDateDisplay = if (payment.date.contains("-")) {
-                                        BanglaNumberFormatter.formatShortDate(payment.date)
-                                    } else {
-                                        BanglaNumberFormatter.toBanglaDigits(payment.date)
-                                    }
-                                    Text(
-                                        text = formattedDateDisplay,
-                                        modifier = Modifier.weight(1.4f),
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-
-                                    // Amount
-                                    Text(
-                                        text = BanglaNumberFormatter.formatCurrency(payment.amount),
-                                        modifier = Modifier.weight(1.5f),
-                                        textAlign = TextAlign.End,
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    )
-
-                                    // Method
-                                    val methodLabel = when (payment.paymentMethod.lowercase()) {
-                                        "cash" -> "ক্যাশ"
-                                        "bank" -> "ব্যাংক"
-                                        "bkash" -> "বিকাশ"
-                                        else -> payment.paymentMethod
-                                    }
                                     Box(
-                                        modifier = Modifier.weight(1.2f),
-                                        contentAlignment = Alignment.Center
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(4.dp))
-                                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        Text(
+                                            text = methodLabel,
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+
+                                // Note
+                                Text(
+                                    text = payment.note.ifBlank { "—" },
+                                    modifier = Modifier.width(150.dp).padding(horizontal = 6.dp),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2
+                                )
+
+                                // Admin Actions
+                                if (isAdmin) {
+                                    Row(
+                                        modifier = Modifier.width(80.dp).padding(end = 14.dp),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        IconButton(
+                                            onClick = {
+                                                haptics.tap()
+                                                onNavigateToEditPayment(payment.id)
+                                            },
+                                            modifier = Modifier.size(28.dp)
                                         ) {
-                                            Text(
-                                                text = methodLabel,
-                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                                                color = MaterialTheme.colorScheme.onSurface
+                                            Icon(
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = "Edit",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = {
+                                                haptics.tap()
+                                                deletingPayment = payment
+                                            },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Delete",
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(16.dp)
                                             )
                                         }
                                     }
-
-                                    // Note
-                                    Text(
-                                        text = payment.note.ifBlank { "—" },
-                                        modifier = Modifier.weight(1.8f),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 2
-                                    )
-
-                                    // Admin Actions
-                                    if (isAdmin) {
-                                        Row(
-                                            modifier = Modifier.weight(1.1f),
-                                            horizontalArrangement = Arrangement.End
-                                        ) {
-                                            IconButton(
-                                                onClick = {
-                                                    haptics.tap()
-                                                    onNavigateToEditPayment(payment.id)
-                                                },
-                                                modifier = Modifier.size(28.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Edit,
-                                                    contentDescription = "Edit",
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                            }
-                                            IconButton(
-                                                onClick = {
-                                                    haptics.tap()
-                                                    deletingPayment = payment
-                                                },
-                                                modifier = Modifier.size(28.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Delete,
-                                                    contentDescription = "Delete",
-                                                    tint = MaterialTheme.colorScheme.error,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                            }
-                                        }
-                                    }
                                 }
+                            }
 
-                                if (index < filteredPayments.size - 1) {
-                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
-                                }
+                            if (index < filteredPayments.size - 1) {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
                             }
                         }
                     }

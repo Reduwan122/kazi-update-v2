@@ -253,7 +253,16 @@ fun PdfPreviewModalDialog(
                                         )
                                     )
                                     Text(
-                                        text = "প্রো: ${farmProfile.ownerName} • মোবাইল: ${farmProfile.mobileNumber} • ঠিকানা: ${farmProfile.address}",
+                                        text = "প্রোপ্রাইটর: ${farmProfile.ownerName} • মোবাইল: ${farmProfile.mobileNumber}",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = Color(0xFF444444),
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Medium
+                                        ),
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Text(
+                                        text = "ঠিকানা: ${farmProfile.address}",
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             color = Color(0xFF555555),
                                             fontSize = 11.sp
@@ -372,53 +381,6 @@ fun PdfPreviewModalDialog(
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
                             )
-                        }
-                    }
-                }
-
-                // Bottom Action Bar
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    shadowElevation = 4.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.weight(1f).height(46.dp),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("বন্ধ করুন")
-                        }
-
-                        Button(
-                            onClick = {
-                                val printDocName = "Kazi_Agrotech_Report"
-                                printHtmlDocument(
-                                    context = context,
-                                    docName = printDocName,
-                                    html = generateHtmlContent(
-                                        title = title,
-                                        farmProfile = farmProfile,
-                                        dailyReports = sortedDailyReports,
-                                        allReports = fullReports,
-                                        baselineStock = baselineStock,
-                                        expenses = sortedExpenses,
-                                        reportCategory = reportCategory
-                                    )
-                                )
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                            modifier = Modifier.weight(1.3f).height(46.dp),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Icon(imageVector = Icons.Default.Print, contentDescription = "Print")
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("প্রিন্ট / সেভ করুন", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -1172,7 +1134,8 @@ fun generateHtmlContent(
                         <div class="header-logo">$logoHtml</div>
                         <div class="header-text">
                             <h1 class="title">${farmProfile.farmName}</h1>
-                            <div class="subtitle">প্রো: ${farmProfile.ownerName} &bull; মোবাইল: ${farmProfile.mobileNumber} &bull; ঠিকানা: ${farmProfile.address}</div>
+                            <div class="subtitle">প্রোপ্রাইটর: ${farmProfile.ownerName} &bull; মোবাইল: ${farmProfile.mobileNumber}</div>
+                            <div class="subtitle">ঠিকানা: ${farmProfile.address}</div>
                         </div>
                         <div class="header-spacer"></div>
                     </div>

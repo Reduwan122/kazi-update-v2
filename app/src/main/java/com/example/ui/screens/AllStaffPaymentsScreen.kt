@@ -525,49 +525,52 @@ fun AllStaffPaymentsScreen(
                         // Table Header
                         Row(
                             modifier = Modifier
-                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
-                                .padding(vertical = 10.dp, horizontal = 12.dp),
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .padding(vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = "স্টাফের নাম",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.width(130.dp)
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.width(135.dp).padding(start = 14.dp),
+                                textAlign = TextAlign.Start
                             )
                             Text(
                                 text = "তারিখ",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.width(90.dp),
                                 textAlign = TextAlign.Center
                             )
                             Text(
-                                text = "পরিমাণ",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.width(105.dp),
+                                text = "পরিমাণ (৳)",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.width(115.dp),
                                 textAlign = TextAlign.End
                             )
                             Text(
-                                text = "পেমেন্ট মাধ্যম",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.width(100.dp),
+                                text = "মাধ্যম",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.width(95.dp),
                                 textAlign = TextAlign.Center
                             )
                             Text(
                                 text = "নোট",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.width(130.dp)
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.width(140.dp).padding(horizontal = 6.dp),
+                                textAlign = TextAlign.Start
                             )
                             if (isAdmin) {
                                 Text(
                                     text = "অ্যাকশন",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.width(80.dp),
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.width(80.dp).padding(end = 14.dp),
                                     textAlign = TextAlign.Center
                                 )
                             }
@@ -577,12 +580,13 @@ fun AllStaffPaymentsScreen(
 
                         // Table Rows
                         filteredPayments.forEachIndexed { index, payment ->
-                            val rowBg = if (index % 2 == 0) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerLowest
+                            val rowBg = if (index % 2 == 1) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.3f) else Color.Transparent
 
                             Row(
                                 modifier = Modifier
+                                    .fillMaxWidth()
                                     .background(rowBg)
-                                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                                    .padding(vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 // Clickable Staff Name
@@ -593,17 +597,19 @@ fun AllStaffPaymentsScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     ),
                                     modifier = Modifier
-                                        .width(130.dp)
+                                        .width(135.dp)
+                                        .padding(start = 14.dp)
                                         .clickable {
                                             haptics.tap()
                                             onNavigateToStaffHistory(payment.staffId, payment.staffName)
-                                        }
+                                        },
+                                    textAlign = TextAlign.Start
                                 )
 
                                 Text(
                                     text = BanglaNumberFormatter.formatShortDate(payment.date),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.width(90.dp),
                                     textAlign = TextAlign.Center
                                 )
@@ -614,39 +620,30 @@ fun AllStaffPaymentsScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF0D631B)
                                     ),
-                                    modifier = Modifier.width(105.dp),
+                                    modifier = Modifier.width(115.dp),
                                     textAlign = TextAlign.End
                                 )
 
+                                val methodLabel = when (payment.paymentMethod.lowercase()) {
+                                    "cash" -> "ক্যাশ"
+                                    "bank" -> "ব্যাংক"
+                                    "bkash" -> "বিকাশ"
+                                    else -> payment.paymentMethod
+                                }
                                 Box(
-                                    modifier = Modifier.width(100.dp),
+                                    modifier = Modifier.width(95.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(
-                                                when (payment.paymentMethod) {
-                                                    "Cash" -> Color(0xFFE8F5E9)
-                                                    "Bank" -> Color(0xFFE3F2FD)
-                                                    "bKash" -> Color(0xFFFCE4EC)
-                                                    else -> MaterialTheme.colorScheme.surfaceContainerHigh
-                                                }
-                                            )
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
                                         Text(
-                                            text = payment.paymentMethod,
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.SemiBold,
-                                                fontSize = 11.sp
-                                            ),
-                                            color = when (payment.paymentMethod) {
-                                                "Cash" -> Color(0xFF2E7D32)
-                                                "Bank" -> Color(0xFF1565C0)
-                                                "bKash" -> Color(0xFFC2185B)
-                                                else -> MaterialTheme.colorScheme.onSurface
-                                            }
+                                            text = methodLabel,
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
                                     }
                                 }
@@ -655,13 +652,15 @@ fun AllStaffPaymentsScreen(
                                     text = payment.note.ifBlank { "—" },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.width(130.dp)
+                                    modifier = Modifier.width(140.dp).padding(horizontal = 6.dp),
+                                    maxLines = 1
                                 )
 
                                 if (isAdmin) {
                                     Row(
-                                        modifier = Modifier.width(80.dp),
-                                        horizontalArrangement = Arrangement.Center
+                                        modifier = Modifier.width(80.dp).padding(end = 14.dp),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         IconButton(
                                             onClick = {
@@ -677,7 +676,6 @@ fun AllStaffPaymentsScreen(
                                                 modifier = Modifier.size(16.dp)
                                             )
                                         }
-
                                         IconButton(
                                             onClick = {
                                                 haptics.tap()

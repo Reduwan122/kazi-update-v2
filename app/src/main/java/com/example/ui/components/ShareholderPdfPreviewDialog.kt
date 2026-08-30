@@ -244,7 +244,16 @@ fun ShareholderPdfPreviewModalDialog(
                                         )
                                     )
                                     Text(
-                                        text = "প্রো: ${farmProfile.ownerName} • মোবাইল: ${farmProfile.mobileNumber} • ঠিকানা: ${farmProfile.address}",
+                                        text = "প্রোপ্রাইটর: ${farmProfile.ownerName} • মোবাইল: ${farmProfile.mobileNumber}",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = Color(0xFF444444),
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Medium
+                                        ),
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Text(
+                                        text = "ঠিকানা: ${farmProfile.address}",
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             color = Color(0xFF555555),
                                             fontSize = 11.sp
@@ -271,7 +280,7 @@ fun ShareholderPdfPreviewModalDialog(
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            // Line 2: Dedicated Month Line & Date
+                            // Line 2: Month Tag & Date
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -283,7 +292,7 @@ fun ShareholderPdfPreviewModalDialog(
                                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFC8E6C9))
                                 ) {
                                     Text(
-                                        text = "মাসঃ $monthTagText",
+                                        text = "মাস: $monthTagText",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color(0xFF0D631B),
@@ -292,61 +301,77 @@ fun ShareholderPdfPreviewModalDialog(
                                 }
 
                                 Text(
-                                    text = "তারিখঃ ${BanglaNumberFormatter.formatBanglaDate(BanglaNumberFormatter.getCurrentDateFormatted())}",
+                                    text = "তারিখ: ${BanglaNumberFormatter.getCurrentDateBangla()}",
                                     style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF555555))
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            // Summary Banner
-                            Surface(
+                            // Metrics Summary Box
+                            Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFF4F9F5),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCCE8D2))
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFC5E1A5))
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(10.dp),
-                                    horizontalArrangement = Arrangement.SpaceAround
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("মোট লেনদেন", fontSize = 11.sp, color = Color(0xFF555555))
-                                        Text("${BanglaNumberFormatter.formatNumber(sortedPayments.size)} বার", fontWeight = FontWeight.Bold, color = Color(0xFF0D631B))
-                                    }
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("মোট পরিশোধিত অর্থ", fontSize = 11.sp, color = Color(0xFF555555))
-                                        Text(BanglaNumberFormatter.formatCurrency(totalAmount), fontWeight = FontWeight.Bold, color = Color(0xFF0D631B))
-                                    }
+                                    Text(
+                                        text = "মোট লেনদেন: ${BanglaNumberFormatter.formatNumber(sortedPayments.size)} বার",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2E7D32)
+                                    )
+                                    Text(
+                                        text = "মোট পরিশোধিত অর্থ: ${BanglaNumberFormatter.formatCurrency(totalAmount)}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2E7D32)
+                                    )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                            // Table Preview
-                            val hScroll = rememberScrollState()
-                            Box(modifier = Modifier.fillMaxWidth().horizontalScroll(hScroll)) {
-                                Column(modifier = Modifier.width(540.dp)) {
+                            // Table
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(0.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCCCCCC))
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    // Header
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .background(Color(0xFF0D631B))
-                                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("ক্রঃ", modifier = Modifier.weight(0.5f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                                        Text("শেয়ারহোল্ডার", modifier = Modifier.weight(1.8f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                        Text("তারিখ", modifier = Modifier.weight(1.2f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                        Text("পরিমাণ", modifier = Modifier.weight(1.4f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
-                                        Text("মাধ্যম", modifier = Modifier.weight(1.0f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                                        Text("নোট", modifier = Modifier.weight(1.5f), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text("ক্রঃ", modifier = Modifier.weight(0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+                                        Text("শেয়ারহোল্ডার", modifier = Modifier.weight(1.8f), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        Text("তারিখ", modifier = Modifier.weight(1.2f), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        Text("পরিমাণ", modifier = Modifier.weight(1.4f), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.End)
+                                        Text("মাধ্যম", modifier = Modifier.weight(1.0f), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+                                        Text("নোট", modifier = Modifier.weight(1.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                     }
 
+                                    // Rows
                                     sortedPayments.forEachIndexed { i, p ->
+                                        val rowBg = if (i % 2 == 0) Color.White else Color(0xFFFAFAFA)
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .background(if (i % 2 == 1) Color(0xFFF9FBF9) else Color.White)
-                                                .padding(horizontal = 8.dp, vertical = 5.dp)
+                                                .background(rowBg)
+                                                .padding(horizontal = 8.dp, vertical = 5.dp),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(BanglaNumberFormatter.formatNumber(i + 1), modifier = Modifier.weight(0.5f), fontSize = 10.5.sp, textAlign = TextAlign.Center)
                                             Text(p.shareholderName, modifier = Modifier.weight(1.8f), fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold)
@@ -363,7 +388,8 @@ fun ShareholderPdfPreviewModalDialog(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .background(Color(0xFFE8F5E9))
-                                            .padding(horizontal = 8.dp, vertical = 7.dp)
+                                            .padding(horizontal = 8.dp, vertical = 7.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text("সর্বমোট", modifier = Modifier.weight(3.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0D631B))
                                         Text(BanglaNumberFormatter.formatCurrency(totalAmount), modifier = Modifier.weight(1.4f), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0D631B), textAlign = TextAlign.End)
@@ -374,7 +400,7 @@ fun ShareholderPdfPreviewModalDialog(
 
                             Spacer(modifier = Modifier.height(45.dp))
 
-                            // Signatures
+                            // Signatures (2 Signatures: প্রস্তুতকারক and অনুমোদনকারী)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
@@ -390,49 +416,6 @@ fun ShareholderPdfPreviewModalDialog(
                                     Text("অনুমোদনকারী", fontSize = 11.sp, color = Color(0xFF333333), fontWeight = FontWeight.SemiBold)
                                 }
                             }
-                        }
-                    }
-                }
-
-                // Modal Footer
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    shadowElevation = 4.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("বাতিল")
-                        }
-
-                        Button(
-                            onClick = {
-                                val printDocName = "Kazi_Agrotech_Shareholder_${System.currentTimeMillis()}"
-                                printShareholderHtml(
-                                    context = context,
-                                    docName = printDocName,
-                                    html = generateShareholderHtml(
-                                        title = title,
-                                        farmProfile = farmProfile,
-                                        payments = sortedPayments
-                                    )
-                                )
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("PDF প্রিন্ট করুন")
                         }
                     }
                 }
@@ -701,7 +684,8 @@ private fun generateShareholderHtml(
                         <div class="header-logo">$logoHtml</div>
                         <div class="header-text">
                             <h1 class="title">${farmProfile.farmName}</h1>
-                            <div class="subtitle">প্রো: ${farmProfile.ownerName} &bull; মোবাইল: ${farmProfile.mobileNumber} &bull; ঠিকানা: ${farmProfile.address}</div>
+                            <div class="subtitle">প্রোপ্রাইটর: ${farmProfile.ownerName} &bull; মোবাইল: ${farmProfile.mobileNumber}</div>
+                            <div class="subtitle">ঠিকানা: ${farmProfile.address}</div>
                         </div>
                         <div class="header-spacer"></div>
                     </div>

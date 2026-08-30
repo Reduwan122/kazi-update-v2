@@ -506,65 +506,68 @@ fun IndividualStaffHistoryScreen(
                         // Header
                         Row(
                             modifier = Modifier
-                                .background(MaterialTheme.colorScheme.surfaceContainer)
-                                .padding(vertical = 10.dp, horizontal = 12.dp),
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .padding(vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = "তারিখ",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                modifier = Modifier.width(95.dp).padding(start = 14.dp),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.width(90.dp),
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Start
                             )
                             Text(
-                                text = "পরিমাণ",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.width(110.dp),
-                                textAlign = TextAlign.End
+                                text = "পরিমাণ (৳)",
+                                modifier = Modifier.width(115.dp),
+                                textAlign = TextAlign.End,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 text = "মাধ্যম",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.width(100.dp),
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 text = "নোট",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                modifier = Modifier.width(150.dp).padding(horizontal = 6.dp),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.width(140.dp)
+                                textAlign = TextAlign.Start
                             )
                             if (isAdmin) {
                                 Text(
                                     text = "অ্যাকশন",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.width(80.dp),
-                                    textAlign = TextAlign.Center
+                                    modifier = Modifier.width(80.dp).padding(end = 14.dp),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
 
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                         filteredPayments.forEachIndexed { index, payment ->
-                            val rowBg = if (index % 2 == 0) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerLowest
+                            val rowBg = if (index % 2 == 1) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.3f) else Color.Transparent
 
                             Row(
                                 modifier = Modifier
+                                    .fillMaxWidth()
                                     .background(rowBg)
-                                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                                    .padding(vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = BanglaNumberFormatter.formatShortDate(payment.date),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.width(90.dp),
-                                    textAlign = TextAlign.Center
+                                    modifier = Modifier.width(95.dp).padding(start = 14.dp),
+                                    textAlign = TextAlign.Start
                                 )
 
                                 Text(
@@ -573,39 +576,30 @@ fun IndividualStaffHistoryScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF0D631B)
                                     ),
-                                    modifier = Modifier.width(110.dp),
+                                    modifier = Modifier.width(115.dp),
                                     textAlign = TextAlign.End
                                 )
 
+                                val methodLabel = when (payment.paymentMethod.lowercase()) {
+                                    "cash" -> "ক্যাশ"
+                                    "bank" -> "ব্যাংক"
+                                    "bkash" -> "বিকাশ"
+                                    else -> payment.paymentMethod
+                                }
                                 Box(
                                     modifier = Modifier.width(100.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(
-                                                when (payment.paymentMethod) {
-                                                    "Cash" -> Color(0xFFE8F5E9)
-                                                    "Bank" -> Color(0xFFE3F2FD)
-                                                    "bKash" -> Color(0xFFFCE4EC)
-                                                    else -> MaterialTheme.colorScheme.surfaceContainerHigh
-                                                }
-                                            )
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
                                         Text(
-                                            text = payment.paymentMethod,
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontWeight = FontWeight.SemiBold,
-                                                fontSize = 11.sp
-                                            ),
-                                            color = when (payment.paymentMethod) {
-                                                "Cash" -> Color(0xFF2E7D32)
-                                                "Bank" -> Color(0xFF1565C0)
-                                                "bKash" -> Color(0xFFC2185B)
-                                                else -> MaterialTheme.colorScheme.onSurface
-                                            }
+                                            text = methodLabel,
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
                                     }
                                 }
@@ -614,13 +608,15 @@ fun IndividualStaffHistoryScreen(
                                     text = payment.note.ifBlank { "—" },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.width(140.dp)
+                                    modifier = Modifier.width(150.dp).padding(horizontal = 6.dp),
+                                    maxLines = 2
                                 )
 
                                 if (isAdmin) {
                                     Row(
-                                        modifier = Modifier.width(80.dp),
-                                        horizontalArrangement = Arrangement.Center
+                                        modifier = Modifier.width(80.dp).padding(end = 14.dp),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         IconButton(
                                             onClick = {
